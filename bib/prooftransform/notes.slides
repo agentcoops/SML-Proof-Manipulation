@@ -1,0 +1,52 @@
+Slide 1: This shows a ATP proof of "rev [a, b] = [b, a]" ("the reverse
+of the list [a, b] is the list [b, a] for all a, b") reconstructed in
+Isabelle as a proof by contradiction. This is what we get following
+Paulson & Susanto.
+
+Slide 2: The same proof redirected. This is what the current code
+does, which I wrote last year.
+
+Slide 4: Pretend we want to prove a formula of the form "1 or 2 or 3",
+where 1, 2, and 3 stand for conjunctions of literals (e.g. "x = y or y
+= z or a = b").
+
+Slide 5: ATPs assume the negated conjecture.
+
+Slide 6: ATPs get a certain number of other facts (axioms), say, 4 to
+200, and here three of them (35, 89, and 136) are used in a resolution
+proof.
+
+Slide 7: The resolution proof derives new clauses from the negated
+conjecture and the axioms. For example, 505 is a logical consequence
+of 35 and 89 taken together. At the end we get False (bottom).
+
+Slide 9: Paulson & Susanto's approach reconstructs the proof step by
+step in Isabelle, using Metis for each inference step.
+
+Slide 12: If we want to redirect the proof, we want to prove 1, 2, or
+3, instead of assuming not 1, not 2, and not 3.
+
+Slides 13 and 14: The clauses 505 and 508 were derived directly from
+the axioms; they are not tainted by the negated conjecture. These are
+"green" facts which we can derive directly the same way as before.
+
+Slide 15: The clauses 653 and 654 and the conclusion False are tainted
+by the negated conjecture (i.e., they depend on it, directly or
+indirectly). These are "orange" facts and these must be flipped
+around.
+
+Slide 16: By the contrapositive, "653 and 654 implies False" becomes
+"True implies not-653 or not-654". Notice the "or" -- a case split!
+
+Slide 17: "not-3 and 508 implies 653" becomes "508 and not 653 implies
+3". No case split this time. (Case splits occur when several tainted
+facts appear as premises of an inference rule (e.g. 653 and 654
+implies False). When a single tainted fact occurs, or none, there is
+no case split.)
+
+Slide 18: Similarly for "not-2 and 505 implies 654".
+
+Slide 21: When reconstructing the proof in Isabelle, we start by
+deriving the green facts.
+
+Slide 22: Then we perform a case split.

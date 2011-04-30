@@ -1,0 +1,84 @@
+(* Title *)
+SML Library for Proof Representation and Manipulation.
+
+
+(* Description *)
+
+In the creation of both automated and interactive proof systems, the
+legibility of generated proofs has long been a problem. Proofs
+generated in such systems are notoriously low-level when compared to
+the informal inscriptions of the practicing mathematician.  Modern
+interactive proof environments like Isabelle strive to provide rich
+higher-order languages for expressing proofs with many features to
+improve legibility and reuse such as unix-pipe-like operators like
+"hence" and "thus", as well as block structures to promote code
+reuse. Such environments thus reach a balance between formal rigor and
+ease of use. However, it remains a quite intensive process to formally
+prove complicated theorems.
+
+On the other hand, there exist numerous fully automated tools that use
+different, often less expressive, logical formalisms but that are able
+to produce difficult but highly illegible proofs. Utilities such as
+Sledgehammer currently attempt to bridge these environments, allowing
+the mathematician to consult, for example, automated theorem provers
+for subgoals such that syntactically-valid HOL proofs are returned
+upon success that can then be verified by Isabelle.
+
+Yet, sledgehammer has come up against numerous difficulties. In
+particular, it remains quite difficult to convert the output from, for
+example, first-order theorem provers such as Vampire into HOL proofs,
+especially when legibility is taken as a criteria of judgement.  The
+aim of my summer project is to aid in precisely this issue: to create
+an SML library to aid in the transition from low-level, machine
+generated proofs to legible proofs containing justifications at a
+higher level of abstraction. While in just this summer it is unlikely
+that this library will be able to produce proofs of the same quality
+as human users, the primary goal is to produce a standard data
+structure atop which subsequent proof cleaning algorithms can be
+implemented in years to come.
+
+Following Karol Pak's work on legibility in proof, the following are
+essential values to be considered:
+i. maximization of the length of paths where every consecutive
+   justification should refer to a previous line
+ii. minimization of the quantity of introduced labels
+iii. minimization of the total length of jumps to distant, previously
+     justified facts iv. presentation using sub-proofs
+
+Given the above, I propose to work on developing a proof
+representation and manipulation library in SML for the purpose of:
+ 1) automatically improving the legibility of human and
+    machine-generated proofs alike
+ 2) improving the performance of bridges between interactive and
+    automatic theorem provers such as Sledgehammer.
+
+This project will consist in several concrete stages:
+(1) The development of an efficient graph data structure for proof
+    representation in SML.
+(2) Integration with TSTP
+(3) Implementation of two proof manipulation algorithms to ensure the
+    usability of proof data structure. Likely some refactoring.
+    a) factoring out of common proof components (avoid exponential 
+       explosion)
+    b) proof by contradiction into direct proof
+(4) Integration with Isabelle
+(5) Implementation of the rest of decided upon manipulation algorithms.
+     a) linear reorganization of proofs (better legibility)
+     b) introduction of structure in a proof using block abstraction 
+        (subproofs)
+     c) if time, implement Karol Pak's utilities
+(6) Integration of this suite with Sledgehammer
+(7) Integration with SMT solvers.
+
+Parts (1) and (3) will require a significant amount of research into
+existent proof representations and the difficulties in the current
+representation within Sledgehammer. It thus seems that these first
+three steps will take approximately the first half of the summer to
+complete. Once the proof representation has been completed and the
+usability of its API has been tested through the implementation of
+several proof manipulation algorithms, it should be straightforward,
+with the assistance of my mentor, Jasmin, and existent documentation
+to integrate this tool with Isabelle and to implement the remaining
+agreed upon proof manipulation algorithms. (6) is a research problem
+that will probably not be completed during the summer, but that Jasmin
+and I have discussed working on after its termination.
