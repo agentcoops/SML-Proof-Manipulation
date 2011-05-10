@@ -54,8 +54,9 @@
 \let\B=\overline
 %\newcommand\have{\mathrel{\vdash}}
 %\newcommand\have{\mathrel{\;\hookrightarrow\;}}
-\newcommand\have{\mathrel{\;\vartriangleright\;}}
-\newcommand\hence{\mathrel{\;\blacktriangleright\;}}
+\newcommand\have{\mathrel{\,\vartriangleright\;}}
+\newcommand\hencesym{\blacktriangleright}
+\newcommand\hence{\mathrel{\;\hencesym\;}}
 %\newcommand\have{\mathrel{\,\rightharpoonup\,}}
 \newcommand\havebot{\have\smallbot} %% TYPESETTING
 \newcommand\hencebot{\hence\smallbot} %% TYPESETTING
@@ -279,28 +280,28 @@ following proof tree:
 \UIC{$\B{0}$}
     \AXC{$1$}
         \AXC{$2$}
-    \BIC{$1 \mathrel{\land} 2$}
-        \AXC{$1 \mathrel{\land} 2 \longrightarrow 4$}
+    \BIC{$1 \land 2$}
+        \AXC{$1 \land 2 \longrightarrow 4$}
     \BIC{$4$}
-\BIC{$\B{0} \mathrel{\land} 4$}
-    \AXC{$\kern-4em\B{0} \mathrel{\land} 4 \longrightarrow \B{6}$}
+\BIC{$\B{0} \land 4$}
+    \AXC{$\kern-4em\B{0} \land 4 \longrightarrow \B{6}$}
 \BIC{$\B{6}$}
     \AXC{$[\B{0}]$}
     \UIC{$\B{0}$}
         \AXC{$3$}
             \AXC{$1$}
                 \AXC{$2$}
-            \BIC{$1 \mathrel{\land} 2$}
-                \AXC{$1 \mathrel{\land} 2 \longrightarrow 4$}
+            \BIC{$1 \land 2$}
+                \AXC{$1 \land 2 \longrightarrow 4$}
             \BIC{$4$}
-        \BIC{$3 \mathrel{\land} 4$}
-            \AXC{$\kern-3em 3 \mathrel{\land} 4 \longrightarrow 5$}
+        \BIC{$3 \land 4$}
+            \AXC{$\kern-3em 3 \land 4 \longrightarrow 5$}
         \BIC{$5$}
-    \BIC{$\B{0} \mathrel{\land} 5$}
-        \AXC{$\kern-5em\B{0} \mathrel{\land} 5 \longrightarrow \B{7}$}
+    \BIC{$\B{0} \land 5$}
+        \AXC{$\kern-5em\B{0} \land 5 \longrightarrow \B{7}$}
     \BIC{$\B{7}$}
-\BIC{$\B{6} \mathrel{\land} \B{7}$}
-    \AXC{$\kern-5em\B{6} \mathrel{\land} \B{7} \longrightarrow \bot$}
+\BIC{$\B{6} \land \B{7}$}
+    \AXC{$\kern-5em\B{6} \land \B{7} \longrightarrow \bot$}
 \BIC{$\bot$}
 \end{prooftree}
 The proof graph notation is more compact, not least because it enables
@@ -327,13 +328,13 @@ be
 \keyw{proof} -- \\
 \hbox{}\quad \keyw{have}\, $4$ \keyw{\,by\,} (\textit{metis\, }$1$ $2$) \\
 \hbox{}\quad \keyw{have}\, $5$ \keyw{\,by\,} (\textit{metis\, }$3$ $4$) \\
-\hbox{}\quad \keyw{have}\, $6 \mathrel{\lor} 7$ \keyw{\,by\,} \textit{metis} \\
+\hbox{}\quad \keyw{have}\, $6 \lor 7$ \keyw{\,by\,} \textit{metis} \\
 \hbox{}\quad $\{$\quad \keyw{assume}\, $6$ \\
 \hbox{}\qquad\phantom{$\{$}\keyw{have}\, $0$ \keyw{\,by\,} (\textit{metis\, }$4$ $6$)\quad$\}$ \\
 \hbox{}\quad \keyw{moreover} \\
 \hbox{}\quad $\{$\quad \keyw{assume}\, $7$ \\
 \hbox{}\qquad\phantom{$\{$}\keyw{have}\, $0$ \keyw{\,by\,} (\textit{metis\, }$5$ $7$)\quad$\}$ \\
-\hbox{}\quad \keyw{ultimately show}\, $0$ \keyw{\,by\,} (\textit{metis\, }`$6 \mathrel{\lor} 7$') \\
+\hbox{}\quad \keyw{ultimately show}\, $0$ \keyw{\,by\,} (\textit{metis\, }`$6 \lor 7$') \\
 \keyw{qed}
 \end{quote}
 We refer to the Isar tutorial \cite{nipkow-2011-isar} for more information on
@@ -447,8 +448,8 @@ negations. This gives
 2, 4 & \have 3 \\
 1 & \have 4
 \end{align*}
-Finally, if we reorder the sequents and introduce $\hence$ wherever possible, we
-obtain a direct proof:
+Finally, if we reorder the sequents and introduce $\hencesym$ wherever possible,
+we obtain a direct proof:
 
 \begin{center}
 \begin{tabular}{@{}p{.3\textwidth}@{}p{.3\textwidth}@{}}
@@ -503,14 +504,14 @@ The next two examples are lasso-shaped proofs:
 \B 5, \B 6 & \havebot
 \end{aligned}$}
 \end{tabular}}\]
-
+%
 We start with the contradiction proof on the left-hand side. Starting from
 $\bot$, it is easy to turn the proof around up to the lasso cycle:
 %
 \begin{align*}
 & \have 6 \\
-& \hence 5 \\
-& \hence 3 \lor 4
+6 & \have 5 \\
+5 & \have 3 \lor 4
 \end{align*}
 %
 When applying the contrapositive to eliminate the negations in $\B 3, \B 4 \have
@@ -521,13 +522,13 @@ branches:
 \[\left[\begin{tabular}{l|l} %% TYPESETTING
     $\begin{aligned}[t]
       [&3] \\
-      \hence {} & 1 \\
-      \hence {} & 0
+      3 \have {} & 1 \\
+      1 \have {} & 0
     \end{aligned}$\enskip\hbox{}&\enskip
     $\begin{aligned}[t] 
       [&4] \\
-      \hence {} & 2 \\
-      \hence {} & 0
+      4 \have {} & 2 \\
+      2 \have {} & 0
     \end{aligned}$
   \end{tabular}\right]\]
 
@@ -561,7 +562,7 @@ we end up with a fair share of duplication:
 
 In this case, the key is to observe that it is enough if both branches prove
 $2$, and from there we prove the rest. The complete proof is (without and
-with $\hence$):
+with $\hencesym$):
 \[\hbox{\begin{tabular}{@{}p{.25\textwidth}@{}p{.25\textwidth}@{}}
 \frm \hav 5 \lor 6 \end
 \cases{\begin{tabular}{l|l}
@@ -625,74 +626,85 @@ Our final example is truly diabolical (and sightly unrealistic):
 \B 7, \B 8 & \havebot
 \end{aligned}$}
 \end{tabular}}\]
+%
+We start with the contrapositive of the last sequent:
+%
+\[\have 7 \lor 8\]
+%
+Then we identify the nodes that dominate only one branch in the refutation graph
+(i.e., that are reachable by navigating upward). Looking at the graph, we see
+that $\B 5$ dominates $\B 7$ but not $\B 8$, and is the only such node. We
+perform a case split and allow ourselves to perform inferences requiring 5 and 7
+in the left branch and 8 in the right branch. First the right branch:
+%
+\begin{align*}
+[&8] \\
+8 \have {} & 3 \lor 6
+\end{align*}
+%
+There is nothing more we can do for now: Any further inferences we would do in
+the right branch would need to be repeated in the left branch. Now we do the
+left branch:
+%
+\begin{align*}
+[&7] \\
+7 \have {} & 2 \lor 5 \lor 6
+\end{align*}
+We would now like to perform the inference $5 \have 2 \lor 4$. This requires
+a case split:
+%
+\[\hbox{\begin{tabular}{@{}p{.5\textwidth}@{}p{.5\textwidth}@{}}
+\cases{\begin{tabular}{l|r@{}l|l}
+[2] & [&5] & [6] \\
+    & $5 \have {}$ & $2 \lor 4$
+\end{tabular}}\end{tabular}}\]
+%
+The 2 and 6 subbranches are left alone. Since only one branch of the subcase
+split is nontrivial, we find it more aesthetically pleasing to abbreviate it to
+%
+\[2 \lor 5 \lor 6 \have 2 \lor 4 \lor 6\]
+%
+Hence, the left branch proves $2 \lor 4 \lor 6$, the right branch proves $3 \lor
+6$, and both branches together prove $2 \lor 3 \lor 4 \lor 6$.
 
-We start with
-
-$      |- 7 \lor 8$
-
-Then we identify the nodes that dominate only one branch in the refutation
-graph---i.e., that are reachable by navigating backward (upward). Looking at the
-graph, we see that $\B 5$ dominates $\B 7$ but not $\bot 8$, and is the only
-such node. So we do a case split, and allow ourselves to perform inferences
-requiring 5 and 7 in the left branch and 8 in the right branch. First the
-right branch:
-
-    [8]
-    8 |- 3, 6
-
-Nothing more to do. Any further inferences we would do on it
-would need to be repeated in the left branch, which we want to avoid.
-Left branch:
-
-         [7]
-$    7 |- 2 \lor 5 \lor 6$
-
-    { [2]
-    | [5]
-$      5 |> 2 \lor 4$
-    | [6]}
-
-The 2 and 6 are left alone. We can abbreviate the subcase split to
-
-  $2 \lor 5 \lor 6 |- 2 \lor 4 \lor 6$
-
-In the end, the left branch proves $2 \lor 4 \lor 6$, and
-both branches together prove $2 \lor 3 \lor 4 \lor 6$.
-
-This gives us a new case split, but notice that 6 is dominated by every other.
+This gives us a new case split, but notice that 6 is dominated by 2, 3, and 4.
 We start with it:
-
-  {[2]
-  |[3]
-  |[4]
-  |[6]
-$   6 |- 3 \lor 4$}
-
-i.e. $2 \lor 3 \lor 4$. Since all but one branches are trivial, we abbreviate it
-as
-
-$  2 \lor 3 \lor 4 \lor 6 |- 2 \lor 3 \lor 4$
-
-One way to see this is as ``rewriting.'' Similarly with 4:
-
-  {[2]
-  |[3]
-  |[4]
-$   4 |- 2 \lor 3$}
-
-abbreviated as
-
-$  2 \lor 3 \lor 4 |- 2 \lor 3$
-
-i.e. $2 \lor 3$. The rest is reminiscent of our second lasso:
-
-  { [2]
-    2 |- 1
-  | [3]
-    3 |- 1 }
-  1 |- 0
-
-Gluing all of this together, we get
+%
+\[\hbox{\begin{tabular}{@{}p{.5\textwidth}@{}p{.5\textwidth}@{}}
+\cases{\begin{tabular}{l|l|l|r@{}l}
+[2] & [3] & [4] & [&6] \\
+& & & $6 \have {}$ & $3 \lor 4$
+\end{tabular}}\end{tabular}}\]
+This proves $2 \lor 3 \lor 4$. Since all but one branches are trivial, we
+abbreviate it:
+\[2 \lor 3 \lor 4 \lor 6 \have 2 \lor 3 \lor 4\]
+It might help to think of such steps as ``rewriting'' steps, where
+6 is rewritten into $3 \lor 4$. Now, 4 is dominated by 2 and 3, so we perform
+another case split:
+\[\hbox{\begin{tabular}{@{}p{.5\textwidth}@{}p{.5\textwidth}@{}}
+\cases{\begin{tabular}{l|l|r@{}l}
+[2] & [3] & [&4] \\
+& & $4 \have {}$ & $2 \lor 3$
+\end{tabular}}\end{tabular}}\]
+And we abbreviate it:
+\[2 \lor 3 \lor 4 \have 2 \lor 3\]
+We are left with the conclusion $2 \lor 3$. The rest is reminiscent of our
+second lasso-shaped proof:
+\[\hbox{\begin{tabular}{@{}p{.25\textwidth}@{}p{.25\textwidth}@{}}
+\cases{\begin{tabular}{l|l}
+    $\begin{aligned}[t]
+      [&2] \\
+      2 \have {} & 1
+    \end{aligned}$\enskip\hbox{}&\enskip
+    $\begin{aligned}[t] 
+      [&3] \\
+      3 \have {} & 1
+    \end{aligned}$
+  \end{tabular}}
+\frm 1 \hav 0 \end
+\end{tabular}}\]
+%
+Gluing all of this together (and using $\hencesym$), we get
 
 \begin{quote}
 \begin{tabular}{@{}p{.45\textwidth}@{}p{.5\textwidth}@{}}
@@ -750,7 +762,8 @@ Gluing all of this together, we get
 \end{tabular}
 \end{quote}
 
-Which isn't too bad, considering the spaghetti we started with.
+\noindent
+Which is not too bad, considering the spaghetti we started with.
 
 \section{The Algorithm}
 \label{sec:the-algorithm}
