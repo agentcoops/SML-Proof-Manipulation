@@ -393,9 +393,9 @@ The notation in brace is a case split. In general, a case split has the form
 \[\left[\begin{tabular}{l|c|l}
   $\begin{aligned}[t]
     [&\Gamma_1] \\
-     \Delta_{11} \have {} & \mathrm{E}_{11} \\
+     \Delta_{11} \have {} & \varphi_{11} \\
      & ~\vdots \\
-     \Delta_{1k_1} \have {} & \mathrm{E}_{1k_1}
+     \Delta_{1k_1} \have {} & \varphi_{1k_1}
     \end{aligned}$\enskip\hbox{}&\enskip
   $\begin{aligned}[t]
     ~\ldots~ \\
@@ -405,9 +405,9 @@ The notation in brace is a case split. In general, a case split has the form
     \end{aligned}$\enskip\hbox{}&\enskip
   $\begin{aligned}[t]
     [&\Gamma_n] \\
-     \Delta_{n1} \have {} & \mathrm{E}_{n1} \\
+     \Delta_{n1} \have {} & \varphi_{n1} \\
      & ~\vdots \\
-     \Delta_{nk_n} \have {} & \mathrm{E}_{nk_n}
+     \Delta_{nk_n} \have {} & \varphi_{nk_n}
     \end{aligned}$
 \end{tabular}
 \right]\]
@@ -417,7 +417,7 @@ must be a valid proof. The assumptions $[\Gamma_{\!j}]$ may be used to
 discharge assumptions in the same branch, just as if they had been
 sequents ${} \have \Gamma_{\!j}$. Seen from outside, the case split
 expression stands for a sequent with the succedent
-$\mathrm{E}_{1k_1}, \ldots, \mathrm{E}_{nk_n}$.
+$\varphi_{1k_1}, \ldots, \varphi_{nk_n}$.
 
 \section{Introductory Examples}
 \label{sec:introductory-examples}
@@ -655,8 +655,8 @@ a case split:
 %
 \[\hbox{\begin{tabular}{@{}p{.5\textwidth}@{}p{.5\textwidth}@{}}
 \cases{\begin{tabular}{l|r@{}l|l}
-[2] & [&5] & [6] \\
-    & $5 \have {}$ & $2 \lor 4$
+ & [&5] & \\
+{[2]} & $5 \have {}$ & $2 \lor 4$ & [6]
 \end{tabular}}\end{tabular}}\]
 %
 The 2 and 6 subbranches are left alone. Since only one branch of the subcase
@@ -672,8 +672,8 @@ We start with it:
 %
 \[\hbox{\begin{tabular}{@{}p{.5\textwidth}@{}p{.5\textwidth}@{}}
 \cases{\begin{tabular}{l|l|l|r@{}l}
-[2] & [3] & [4] & [&6] \\
-& & & $6 \have {}$ & $3 \lor 4$
+ &  & & [&6] \\
+{[2]} & [3] & [4] & $6 \have {}$ & $3 \lor 4$
 \end{tabular}}\end{tabular}}\]
 This proves $2 \lor 3 \lor 4$. Since all but one branches are trivial, we
 abbreviate it:
@@ -683,8 +683,8 @@ It might help to think of such steps as ``rewriting'' steps, where
 another case split:
 \[\hbox{\begin{tabular}{@{}p{.5\textwidth}@{}p{.5\textwidth}@{}}
 \cases{\begin{tabular}{l|l|r@{}l}
-[2] & [3] & [&4] \\
-& & $4 \have {}$ & $2 \lor 3$
+ & & [&4] \\
+{[2]} & [3] & $4 \have {}$ & $2 \lor 3$
 \end{tabular}}\end{tabular}}\]
 And we abbreviate it:
 \[2 \lor 3 \lor 4 \have 2 \lor 3\]
@@ -704,7 +704,7 @@ second lasso-shaped proof:
 \frm 1 \hav 0 \end
 \end{tabular}}\]
 %
-Gluing all of this together (and using $\hencesym$), we get
+Putting all of this together (and using $\hencesym$), we get
 
 \begin{quote}
 \begin{tabular}{@{}p{.45\textwidth}@{}p{.5\textwidth}@{}}
@@ -768,83 +768,147 @@ Which is not too bad, considering the spaghetti we started with.
 \section{The Algorithm}
 \label{sec:the-algorithm}
 
-There is one more concept that needs to be explained: that of a
-``target''. The target set is a set of formulas whose disjunction is
-what we want to prove. For the top-level proof, the target is the
-singleton consisting only of the conjecture. For subproofs, the target
+The process we applied to the examples in the previous section can be
+generalized into an algorithm. The algorithm relies on the proof by
+contradiction expressed as a set of sequents, which are turned around using the
+contrapositive so that the formulas are unnegated (as we did in all the
+examples). It maintains a set of \emph{proved nodes} (initially the empty set)
+and a set of \emph{target nodes} that it may proceed to prove (initially the set
+of all unnegated nodes). The constructed proof is expressed using the shorthand
+notation.
 
-Our approach is based on four basic tools: contraposition (on
-sequents), cut, case split, and ``rewriting.'' Before we look at the
-actual algorithm, it will help to see these tools in action.
+\begin{enumerate}
+\item Derive as many sequents as possible with their conclusion in the target set
+based on the proved nodes. Each time a sequent is appended to the proof, its
+conclusion is added to the set of proved nodes.
 
-Cut (our second tool) is implicit in this notation. The proof
-tree makes it explicit:
-%
-\begin{prooftree}
-\AXC{\phantom{.}}
-\UIC{${} \have 2$\strut}
-  \AXC{\phantom{.}}
-  \UIC{$2 \have 1$\strut}
-\RL{\textsc{Cut}}
-\BIC{${} \have 1$\strut}
-  \AXC{\phantom{.}}
-  \UIC{$1 \have 0$\strut}
-\RL{\textsc{Cut}}
-\BIC{${} \have 0$\strut}
-\end{prooftree}
+\item If all the nodes in the target set are proved, we are done. Otherwise, the
+last sequent must be of the form $\Gamma \have c_1 \lor \cdots \lor c_n$ for $n
+\ge 2$. Perform an $n$-way case split:%
+\footnote{A generalization would be to perform an $m$-way case split, with $m <
+n$, on disjuncts. For example, we could do a 3-way case split with $c_1 \lor
+c_2$, $c_3$, and $c_4$ as the assumptions instead of breaking all the
+disjunctions and doing a 4-way split. This could potentially lead to cleaner
+proofs, if the groupings are chosen carefully. We will not explore this avenue
+further in this paper.}
+\[
+\left[\begin{tabular}{c|c|c}
+$[c_1]$ & $\cdots$ & $[c_n]$ \\
+ & & 
+\end{tabular}
+\right]
+\]
 
-In general, reordering might not suffice. For example, for the proof
-by contradiction used as the running example in
-Section~\ref{sec:proof-notations}, the contrapositive sequents are
-%
+\item For each of the branches, invoke the procedure recursively, with the
+assumption added to the proved set and with all the nodes that dominate the
+branch and no other branch as the target set.
+
+\item After the case split, go back to step 1. The case split itself is seen as
+a sequent of the form $\Gamma \have c_1 \lor \cdots \lor c_n$ as far as step 2
+is concerned.
+\end{enumerate}
+
+Once this procedure has terminated, we abbreviate case splits in which all
+but one branch are trivial using ``rewriting,'' transforming
+\[
+\left[\begin{tabular}{c|c|c|r@{}l|c|c|c}
+&&& $[$ & $c_i]$ &&& \\
+&&& $\Delta_1 \have {}$ & $d_1$ &&& \\
+&&&& $\vdots$ &&& \\
+$[c_1]$ & $\cdots$ & $[c_{i-1}]$ & $\Delta_n \have {}$ & $d_n$ & $[c_{i+1}]$ & $\cdots$ & $[c_m]$
+\end{tabular}
+\right]
+\]
+into
 \begin{align*}
-1, 2 & \have 4 \\
-3, 4 & \have 5 \\
-4, 6 & \have 0 \\
-5, 7 & \have 0 \\
-{} & \have 6, 7
+\Delta_1 \have {} & c_1 \lor \cdots \lor c_{i-1} \lor d_1 \lor c_{i+1} \lor \cdots c_m \\
+& \vdots \\
+\Delta_n \have {} & c_1 \lor \cdots \lor c_{i-1} \lor d_n \lor c_{i+1} \lor \cdots c_m \\
 \end{align*}
+This works even if the $c_i$ branch has case splits. What we are doing
+effectively is taking the nontrivial branch and adding $c_1, \ldots, c_{i-1},
+c_{i+1}, \ldots, c_m$ as disjuncts in the conclusions.
 
-We can start outputing the proof
-%
-\begin{align*}
-1, 2 & \have 4 \\
-3, 4 & \have 5 \\
-{} & \have 6, 7
-\end{align*}
-%
-but then we get stuck: There is no obvious way to use the remaining
-two sequents, $4, 6 \have 0$ and $5, 7 \have 0$, because we only know
-``$6$ or $7$.'' With a case split (our third tool), we can finish the
-proof. In the left branch, we assume $6$, which allows us to use the
-sequent $4, 6 \have 0$ to deduce $0$, and similarly in the right
-branch. We saw the full proof in Section~\ref{sec:proof-notations}.
-Case split can be seen as a special case of a multi-cut rule.
+Finally, we clean up the proof by introducing $\hencesym$ and translate it to
+Isar.
 
-Alternative: Using ``rewriting'' (our fourth tool), the sequent ${}
-\have 6, 7$ can be transformed until we reach the desired conclusion.
-E.g.
+%There is one more concept that needs to be explained: that of a
+%``target''. The target set is a set of formulas whose disjunction is
+%what we want to prove. For the top-level proof, the target is the
+%singleton consisting only of the conjecture. For subproofs, the target
 %
-\begin{align*}
-4 & \have 0, 7 \\
-4, 5 & \have 0
-\end{align*}
-
-This is justified by the following proof tree:
+%Our approach is based on four basic tools: contraposition (on
+%sequents), cut, case split, and ``rewriting.'' Before we look at the
+%actual algorithm, it will help to see these tools in action.
 %
-\begin{prooftree}
-\AXC{${} \have 6, 7$\strut}
-  \AXC{$4, 6 \have 0$\strut}
-\RL{\textsc{Cut}}
-\BIC{$4 \have 0, 7$\strut}
-  \AXC{$5, 7 \have 0$\strut}
-\RL{\textsc{Cut}}
-\BIC{$4, 5 \have 0$\strut}
-\end{prooftree}
+%Cut (our second tool) is implicit in this notation. The proof
+%tree makes it explicit:
+%%
+%\begin{prooftree}
+%\AXC{\phantom{.}}
+%\UIC{${} \have 2$\strut}
+%  \AXC{\phantom{.}}
+%  \UIC{$2 \have 1$\strut}
+%\RL{\textsc{Cut}}
+%\BIC{${} \have 1$\strut}
+%  \AXC{\phantom{.}}
+%  \UIC{$1 \have 0$\strut}
+%\RL{\textsc{Cut}}
+%\BIC{${} \have 0$\strut}
+%\end{prooftree}
 %
-However, in this case, we prefer the case split, because it more
-clearly reflects the structure of the underlying proof. As the proof
-tree indicates, rewriting is again an instance of cut.
+%In general, reordering might not suffice. For example, for the proof
+%by contradiction used as the running example in
+%Section~\ref{sec:proof-notations}, the contrapositive sequents are
+%%
+%\begin{align*}
+%1, 2 & \have 4 \\
+%3, 4 & \have 5 \\
+%4, 6 & \have 0 \\
+%5, 7 & \have 0 \\
+%{} & \have 6, 7
+%\end{align*}
+%
+%We can start outputing the proof
+%%
+%\begin{align*}
+%1, 2 & \have 4 \\
+%3, 4 & \have 5 \\
+%{} & \have 6, 7
+%\end{align*}
+%%
+%but then we get stuck: There is no obvious way to use the remaining
+%two sequents, $4, 6 \have 0$ and $5, 7 \have 0$, because we only know
+%``$6$ or $7$.'' With a case split (our third tool), we can finish the
+%proof. In the left branch, we assume $6$, which allows us to use the
+%sequent $4, 6 \have 0$ to deduce $0$, and similarly in the right
+%branch. We saw the full proof in Section~\ref{sec:proof-notations}.
+%Case split can be seen as a special case of a multi-cut rule.
+%
+%Alternative: Using ``rewriting'' (our fourth tool), the sequent ${}
+%\have 6, 7$ can be transformed until we reach the desired conclusion.
+%E.g.
+%%
+%\begin{align*}
+%4 & \have 0, 7 \\
+%4, 5 & \have 0
+%\end{align*}
+%
+%This is justified by the following proof tree:
+%%
+%\begin{prooftree}
+%\AXC{${} \have 6, 7$\strut}
+%  \AXC{$4, 6 \have 0$\strut}
+%\RL{\textsc{Cut}}
+%\BIC{$4 \have 0, 7$\strut}
+%  \AXC{$5, 7 \have 0$\strut}
+%\RL{\textsc{Cut}}
+%\BIC{$4, 5 \have 0$\strut}
+%\end{prooftree}
+%%
+%However, in this case, we prefer the case split, because it more
+%clearly reflects the structure of the underlying proof. As the proof
+%tree indicates, rewriting is again an instance of cut.
 
 %\section{Theoretical Properties}
 %\label{sec:theoretical-properties}
@@ -878,19 +942,23 @@ tree indicates, rewriting is again an instance of cut.
 \section{Conclusion}
 \label{sec:conclusion}
 
-  * method is not terribly difficult
-  * and if would not surprise us if it was part of folklore or
-    some special case of some existing work
+We presented a method to transform proofs by contradiction as returned by
+resolution provers into direct proofs. This sometimes introduces case splits,
+but our procedure avoids duplicating proof steps in the different branches of
+the split by joining again as early as possible. The result is direct Isar
+proofs that have some of the structure Isabelle users have come to expect. Our
+approach is fairly simple, it would not surprise us if it were part of folklore
+or a special case of existing work.
 
-In a second step, we are interested in transformations that increase
-proof readability, such as those available for Mizar proofs
-\cite{pak-2010}.
+In a second step, we are interested in transformations that increase proof
+readability, such as those available for Mizar proofs \cite{pak-2010}. We also
+need to address other issues not treated satisfactorily in Sledgehammer
+\cite{paulson-susanto-2007}, notably Skolemization.
 
 \paragraph{Acknowledgment.}
-Tobias Nipkow.
-Geoff Sutcliffe and Joseph Urban motivated me to look into this.
-Andrei Popescu, with his deep theoretical insights, helped simplify my
-previous framework.
+I want to thank Tobias Nipkow, Geoff Sutcliffe, and Joseph Urban for motivating
+me to look into this. I am also thankful to Andrei Popescu, who with his deep
+theoretical insights helped simplify the approach considerably.
 
 \bibliography{bib}{}
 \bibliographystyle{abbrv}
