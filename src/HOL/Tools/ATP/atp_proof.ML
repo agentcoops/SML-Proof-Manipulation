@@ -25,7 +25,7 @@ sig
 
   type 'a proof = 'a uniform_formula step list
 
-  val from_file : bool -> string -> string proof
+  val from_tstp_file : bool -> string -> string proof
   val strip_spaces : (char -> bool) -> string -> string
   val short_output : bool -> string -> string
   val string_for_failure : string -> failure -> string
@@ -54,7 +54,7 @@ datatype failure =
   UnknownError of string
 
 (* This turns a TSTP file into a proof structure. *)
-fun from_file clean file_loc =
+fun from_tstp_file clean file_loc =
     let val file_text = TextIO.inputAll (TextIO.openIn file_loc)
     in
         atp_proof_from_tstplike_string clean file_text
