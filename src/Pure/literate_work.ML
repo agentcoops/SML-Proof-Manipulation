@@ -43,8 +43,7 @@ fun add_proof_step_to_graph (Inference (name, formula, justifications), graph) =
         List.foldl add_justification_edge graph_with_node justifications
     end;
 
-val graph_with_step = add_proof_step_to_graph an_element graph1;
-
+val graph_with_step = add_proof_step_to_graph (an_element, graph1);
 
 (*
 So, we get a problem file which specifies a description of the theory in 
