@@ -59,6 +59,6 @@ Then, we get a proof. TSTP format is basically:
 Identifier will be a number and possibly a name if it comes from a
 problem description. We just need to put this into a graph structure!
 *)
-
 fun proof_to_graph proof = 
     List.foldl add_proof_step_to_graph empty proof;
+
