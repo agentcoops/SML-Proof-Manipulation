@@ -1,0 +1,57 @@
+cnf('0.1.0.0',axiom,
+    ( map(X1,nil) = nil ),
+    file('map_f_x_y.tptp', fact_map_Osimps_I1_J)).
+cnf('0.1.1.0',plain,
+    ( map(X1,nil) = nil ),
+    inference(weigh,[status(thm)],['0.1.0.0']),
+    [weight('<0,0,0,[0,0,0,1]>')]).
+cnf('0.1.2.0',plain,
+    ( map(X1,nil) = nil ),
+    inference(orient,[status(thm)],['0.1.1.0',theory(equality)]),
+    [u,rule_1]).
+cnf('0.2.0.0',axiom,
+    ( map(X1,cons(X2,X3)) = cons(hAPP(X1,X2),map(X1,X3)) ),
+    file('map_f_x_y.tptp', fact_map_Osimps_I2_J)).
+cnf('0.2.1.0',plain,
+    ( map(X1,cons(X2,X3)) = cons(hAPP(X1,X2),map(X1,X3)) ),
+    inference(weigh,[status(thm)],['0.2.0.0']),
+    [weight('<1,0,0,[0,0,0,2]>')]).
+cnf('0.2.2.0',plain,
+    ( cons(hAPP(X1,X2),map(X1,X3)) = map(X1,cons(X2,X3)) ),
+    inference(orient,[status(thm)],['0.2.1.0',theory(equality)]),
+    [x,rule_2]).
+cnf('0.3.0.0',plain,
+    ( map(X1,cons(X2,nil)) = cons(hAPP(X1,X2),nil) ),
+    inference(cp,[status(thm)],['0.2.2.0','0.1.2.0',theory(equality)]),
+    [pos('L.2','L')]).
+cnf('0.3.1.0',plain,
+    ( map(X1,cons(X2,nil)) = cons(hAPP(X1,X2),nil) ),
+    inference(weigh,[status(thm)],['0.3.0.0']),
+    [weight('<65,2,1,[1,0,0,4]>')]).
+cnf('0.3.2.0',plain,
+    ( map(X1,cons(X2,nil)) = cons(hAPP(X1,X2),nil) ),
+    inference(orient,[status(thm)],['0.3.1.0',theory(equality)]),
+    [u,rule_3]).
+cnf('0.4.0.0',plain,
+    ( map(X1,cons(X2,cons(X3,nil))) = cons(hAPP(X1,X2),cons(hAPP(X1,X3),nil)) ),
+    inference(cp,[status(thm)],['0.2.2.0','0.3.2.0',theory(equality)]),
+    [pos('L.2','L')]).
+cnf('0.4.1.0',plain,
+    ( map(X1,cons(X2,cons(X3,nil))) = cons(hAPP(X1,X2),cons(hAPP(X1,X3),nil)) ),
+    inference(weigh,[status(thm)],['0.4.0.0']),
+    [weight('<169,3,2,[0,0,0,4]>')]).
+cnf('0.4.2.0',plain,
+    ( cons(hAPP(X1,X2),cons(hAPP(X1,X3),nil)) = map(X1,cons(X2,cons(X3,nil))) ),
+    inference(orient,[status(thm)],['0.4.1.0',theory(equality)]),
+    [x,rule_4]).
+cnf('1.0.0.0',conjecture,
+    ( map(f,cons(x,cons(y,nil))) = cons(hAPP(f,x),cons(hAPP(f,y),nil)) ),
+    file('map_f_x_y.tptp', conj_0)).
+cnf('1.0.0.1',plain,
+    ( map(f,cons(x,cons(y,nil))) = map(f,cons(x,cons(y,nil))) ),
+    inference(reduction,[status(thm)],['1.0.0.0','0.4.2.0',theory(equality)]),
+    [pos('R','L')]).
+cnf('1.0.0.2',plain,
+    ( $true ),
+    inference(trivial,[status(thm)],['1.0.0.1',theory(equality)]),
+    [conjecture_1]).
