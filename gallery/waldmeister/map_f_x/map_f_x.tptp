@@ -1,0 +1,6 @@
+cnf(fact_map_Osimps_I1_J, axiom,
+    (map(Fa, nil) = nil)).
+cnf(fact_map_Osimps_I2_J, axiom,
+    (map(Fa, cons(Xa, Xs)) = cons(hAPP(Fa, Xa), map(Fa, Xs)))).
+cnf(conj_0, hypothesis,
+    (map(f, cons(x, nil)) != cons(hAPP(f, x), nil))).

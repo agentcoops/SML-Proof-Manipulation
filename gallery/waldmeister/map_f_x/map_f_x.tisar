@@ -1,0 +1,13 @@
+assume '0.1.0.0': map(X1, nil) = nil
+assume '0.2.0.0': map(X1, cons(X2, X3)) = cons(hAPP(X1, X2), map(X1, X3))
+have '0.2.2.0': cons(hAPP(X1, X2), map(X1, X3)) = map(X1, cons(X2, X3))
+    using '0.2.0.0'
+show map(f, cons(x, nil)) = cons(hAPP(f, x), nil)
+    using '0.1.0.0' '0.2.2.0'
+
+*** OR ***
+
+have cons(hAPP(X1, X2), map(X1, X3)) = map(X1, cons(X2, X3))
+    using fact_map_Osimps_I2_J
+thus map(f, cons(x, nil)) = cons(hAPP(f, x), nil)
+    using fact_map_Osimps_I1_J

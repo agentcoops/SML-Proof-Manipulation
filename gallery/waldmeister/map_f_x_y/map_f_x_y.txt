@@ -1,0 +1,6 @@
+The TPTP and TSTP files were generated using
+
+    lemma "map f [x, y] = [f x, f y]"
+    sledgehammer [prover = remote_waldmeister, erased, overlord] (map.simps)
+
+The files were very lightly hand-edited.
