@@ -363,7 +363,7 @@ the abbreviated format, our running example becomes
 Each step is essentially a sequent $\Gamma \vdash \varphi$. The assumptions are
 either the negated conjecture ($\B{0}$), facts that were proved elsewhere ($1$,
 $2$, and $3$), or formulas that were proved in preceding sequents ($4$, $5$,
-$\B{6}$, and $\B{7}$). The succedent of the last sequent is empty ($\bot$).
+$\B{6}$, and $\B{7}$). The succedent of the last sequent is $\bot$.
 
 Direct proofs can be done the same way, but they have the constraints that we
 may not assume the negated conjecture $\B{0}$ in any of the sequent and that the
@@ -389,7 +389,7 @@ proof above. For example:
 The notation in brace is a case split. In general, a case split has the form
 \[\left[\begin{tabular}{l|c|l}
   $\begin{aligned}[t]
-    [&\Gamma_1] \\
+    [&\psi_1] \\
      \Delta_{11} \have {} & \varphi_{11} \\
      & ~\vdots \\
      \Delta_{1k_1} \have {} & \varphi_{1k_1}
@@ -401,20 +401,20 @@ The notation in brace is a case split. In general, a case split has the form
     ~\ldots~
     \end{aligned}$\enskip\hbox{}&\enskip
   $\begin{aligned}[t]
-    [&\Gamma_n] \\
+    [&\psi_n] \\
      \Delta_{n1} \have {} & \varphi_{n1} \\
      & ~\vdots \\
      \Delta_{nk_n} \have {} & \varphi_{nk_n}
     \end{aligned}$
 \end{tabular}
 \right]\]
-with the requirement that a sequent with the succedent $\Gamma_1,
-\ldots, \Gamma_n$ has been proved already. Also, each of the branches
-must be a valid proof. The assumptions $[\Gamma_{\!j}]$ may be used to
+with the requirement that a sequent with the succedent $\psi_1 \lor
+\ldots \lor \psi_n$ has been proved already. In addition, each of the branches
+must be a valid proof. The assumptions $[\psi_{\!j}]$ may be used to
 discharge assumptions in the same branch, just as if they had been
-sequents ${} \have \Gamma_{\!j}$. Seen from outside, the case split
+sequents ${} \have \psi_{\!j}$. Seen from outside, the case split
 expression stands for a sequent with the succedent
-$\varphi_{1k_1}, \ldots, \varphi_{nk_n}$.
+$\varphi_{1k_1} \lor \ldots \lor \varphi_{nk_n}$.
 
 \section{Introductory Examples}
 \label{sec:introductory-examples}
@@ -422,7 +422,7 @@ $\varphi_{1k_1}, \ldots, \varphi_{nk_n}$.
 \subsection{A Linear Proof}
 \label{sec:a-linear-proof}
 
-We start with a simple proof by contradiction expressed as a proof tree and
+We start with a simple proof by contradiction expressed as a proof graph and
 using our shorthand notation:
 %
 \[\hbox{\begin{tabular}{l@{\qquad}l}
@@ -513,7 +513,7 @@ $\bot$, it is easy to turn the proof around up to the lasso cycle:
 %
 When applying the contrapositive to eliminate the negations in $\B 3, \B 4 \have
 \B 5$, we obtain a disjunction on the right-hand side of the sequent: $5 \have 3
-\lor 4$. To continue from there, we need a case split. Then we can finish then
+\lor 4$. To continue from there, we need a case split. We can then finish the
 branches:
 %
 \[\left[\begin{tabular}{l|l} %% TYPESETTING
@@ -538,7 +538,7 @@ a disjunction:
 \end{align*}
 %
 And if we split naively and finish each branch independently of each other,
-we end up with a fair share of duplication:
+we end up with a fair amount of duplication:
 \pagebreak[3]
 \[\left[\begin{tabular}{l|l} %% TYPESETTING
     $\begin{aligned}[t]
@@ -657,7 +657,7 @@ a case split:
 \end{tabular}}\end{tabular}}\]
 %
 The 2 and 6 subbranches are left alone. Since only one branch of the subcase
-split is nontrivial, we find it more esthetically pleasing to abbreviate it to
+split is nontrivial, we find it more aesthetically pleasing to abbreviate it to
 %
 \[2 \lor 5 \lor 6 \have 2 \lor 4 \lor 6\]
 %
@@ -822,9 +822,9 @@ into
 & \vdots \\
 \Delta_n \have {} & c_1 \lor \cdots \lor c_{i-1} \lor d_n \lor c_{i+1} \lor \cdots c_m \\
 \end{align*}
-This works even if the $c_i$ branch has case splits. What we are doing
-effectively is taking the nontrivial branch and adding $c_1, \ldots, c_{i-1},
-c_{i+1}, \ldots, c_m$ as disjuncts in the conclusions.
+This works even if the $c_i$ branch has nested case splits. We are effectively
+taking the nontrivial branch and adding $c_1, \ldots, c_{i-1}, c_{i+1}, \ldots,
+c_m$ as disjuncts in the conclusions.
 
 Finally, we clean up the proof by introducing $\hencesym$ and translate it to
 Isar.
