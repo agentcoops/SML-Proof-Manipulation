@@ -1,0 +1,11 @@
+The TPTP and TSTP files were generated using
+
+    lemma "map f [x] = [f x]"
+    sledgehammer [remote_waldmeister, erased, overlord] (map.simps)
+
+The files were very lightly hand-edited.
+
+The ".thy" file is an Isabelle file that shows the same proof in Isar, at
+different levels of granularity. The ".tisar" file (ad hoc TPTP Isar-like
+language) shows what the output of the proof manipulation framework at the
+TPTP/TSTP level could be (point (2) of "README").
