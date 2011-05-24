@@ -1,0 +1,13 @@
+The TPTP and TSTP files were generated using the call
+
+    sledgehammer [remote_waldmeister, erased, overlord]
+                 (huntington sup_assoc sup_comm)
+
+immediately after the statement of lemma "huntington_id" in
+"Robbins-Conjecture/Robbins_Conjecture.thy" from the Archive of Formal Proofs
+[1]. The files were very lightly hand-edited.
+
+The file "huntington_id.thy" has a complete setup to replay the original
+proof as well as two versions of the proof found by Waldmeister.
+
+[1] http://afp.sourceforge.net/devel-entries/Robbins-Conjecture.shtml
