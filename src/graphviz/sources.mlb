@@ -1,0 +1,76 @@
+(* $Id: sources.mlb 62 2008-08-20 11:20:33Z tbourke $
+ *
+ * Copyright (c) 2008 Timothy Bourke (University of NSW and NICTA)
+ * All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the "BSD License" which is distributed with the
+ * software in the file LICENSE.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the BSD
+ * License for more details.
+ *)
+local
+    $(SML_LIB)/basis/basis.mlb
+    $(SML_LIB)/basis/sml-nj.mlb
+    $(SML_LIB)/smlnj-lib/Util/smlnj-lib.mlb
+    $(SML_LIB)/smlnj-lib/PP/pp-lib.mlb
+
+    ../general.mlb
+
+    x11_color.sig
+    x11color.sml
+
+    attribute.sig
+    edge_attribute.sig
+    graph_attribute.sig
+    node_attribute.sig
+    id.sig
+
+    dot.sig
+    dotfn.sml
+    ann "nonexhaustiveMatch ignore" in
+        showattfn.sml
+    end
+    dotppfn.sml
+
+    textattribute.sml
+    textdot.sml
+    textdotio.sml
+
+    typedattributes.sml
+    typeddot.sml
+    typeddotio.sml
+    typeddotutil.sml
+
+    plain.sig
+    plainfn.sml
+    textplain.sml
+
+    graphviz.sig
+    graphvizfn.sml
+    hackopsys.sml
+    $(TARGET)-signal64.sml (* unix/win *)
+    $(TARGET)-graphviz64.sml (* unix/win *)
+in
+    signature DOT
+
+    structure Graphviz
+
+    structure TextDot
+    structure TextDotIO
+    structure TextAttribute
+
+    signature GRAPH_ATTRIBUTE
+    signature NODE_ATTRIBUTE
+    signature EDGE_ATTRIBUTE
+    structure TypedDot
+    structure TypedDotIO
+    structure TypedAttributes
+    structure TypedDotUtil
+
+    signature PLAIN
+    structure TextPlain
+end

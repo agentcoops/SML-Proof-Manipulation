@@ -38,7 +38,7 @@ sig
   val add_edge: key * key -> 'a T -> 'a T
   val del_edge: key * key -> 'a T -> 'a T
   val merge: ('a * 'a -> bool) -> 'a T * 'a T -> 'a T                 (*exception DUP*)
-  val join: (key -> 'a * 'a -> 'a) (*exception DUP/SAME*) ->
+  val join: (key -> 'a * 'a -> 'a) (*exception DUP/SAME*) -> 
     'a T * 'a T -> 'a T                                               (*exception DUP*)
   val irreducible_paths: 'a T -> key * key -> key list list
   val all_paths: 'a T -> key * key -> key list list

@@ -62,6 +62,8 @@ problem description. We just need to put this into a graph structure!
 fun proof_to_graph proof = 
     List.foldl add_proof_step_to_graph Graph.empty proof;
 
+fun graph_from_tstp_file file =
+    ATP_Proof.from_tstp_file true file |> proof_to_graph
 
 (* 
 
@@ -118,13 +120,50 @@ fun unnegated_inference (Inference(id, formula, rest)) =
 (* a sequent structure: identifier,  *)
 type a' sequent = Sequent of string * bool * 'a list * 'a list;
 
-(*Wait! can't we just use a node in the graph? *)
+(*Wait! can't we just use a node in the graph? 
+This seems right. Keep track of finished/todo nodes elsewhere, then traverse 
+graph from the bottom, updating accordingly. *)
 
+(* Also, I think we want to complicate the type of a node... *)
 
+type proof_node = {
+     formula: string uniform_formula
+}
 
-(* a way to turn sequents around using contraposition: negs to other side. 
+(* Graph needs to indicate beginning and end of proof for ease of manipulation. *)
+datatype proof_graph = ProofGraph of string * string * proof_node T
+   
 
+(* a way to turn sequents around using contraposition: negs to other
+side. *)
+
+(*
+
+One thing to note in the TSTP: we get the metadata that this is a
+conjecture or a negated_conjecture.  This is lost, though, in the tstp
+parser. It could be easy to infer this, but this might be a necessary
+modification to the parser itself (a better, more information
+preserving internal representation). 
+
+Ask Jasmin?
+
+Across proofs, the "role" function seems to be:
+axiom, plain, conjecture, negated_conjecture
+
+Are there more options here?
+
+Also, remember: disjunction -> or, must factor out the common
+sub-componants!
 *)
+
+
+fun node_contraposition graph node = 
+    let new_formula = unnegated_formula node
+        negated_formula
+    in
+        
+    end
+    
 
 
 (* Now we can make a first pass at the algorithm... *)
