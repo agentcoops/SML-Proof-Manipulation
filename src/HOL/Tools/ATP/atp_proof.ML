@@ -53,8 +53,6 @@ datatype failure =
   MalformedInput | MalformedOutput | Interrupted | Crashed | InternalError |
   UnknownError of string
 
-
-
 fun strip_spaces_in_list _ [] = []
   | strip_spaces_in_list _ [c1] = if Char.isSpace c1 then [] else [str c1]
   | strip_spaces_in_list is_evil [c1, c2] =

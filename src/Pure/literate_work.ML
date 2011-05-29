@@ -126,13 +126,25 @@ graph from the bottom, updating accordingly. *)
 
 (* Also, I think we want to complicate the type of a node... *)
 
+datatype proof_role = Axiom | Conjecture | NegatedConjecture | Plain;
+
 type proof_node = {
-     formula: string uniform_formula
+     formula: string uniform_formula,
+     role: proof_role
 }
 
 (* Graph needs to indicate beginning and end of proof for ease of manipulation. *)
 datatype proof_graph = ProofGraph of string * string * proof_node T
-   
+
+(* So, now we have a form of the proof which contains this necessary
+pre-processing step.  the information exists in two ways: 1) analyzing
+the structure of the proof, 2) in the tstp format.  seems like we
+might not always be able to assume that we have the fact that x is
+negated conjecture so a mapping between a "raw" proof structure and
+one with metadata seems useful. *)
+
+fun preprocessed_proof proof = 
+
 
 (* a way to turn sequents around using contraposition: negs to other
 side. *)
@@ -156,6 +168,17 @@ Also, remember: disjunction -> or, must factor out the common
 sub-componants!
 *)
 
+(* Ok, one attempt at locating the subgraph that is negated_conjecture. *)
+
+fun conjectures graph = 
+    let fun is_conjecture (_, (_, (preds, _))) = 
+            if preds = [] then true else false
+    in
+        Graph.filter_nodes is_conjecture graph
+    end;
+
+fun negated_conjectures graph =
+    
 
 fun node_contraposition graph node = 
     let new_formula = unnegated_formula node
@@ -164,7 +187,6 @@ fun node_contraposition graph node =
         
     end
     
-
 
 (* Now we can make a first pass at the algorithm... *)
 fun negation_to_direct proof =
