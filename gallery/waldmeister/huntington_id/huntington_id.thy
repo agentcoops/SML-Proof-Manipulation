@@ -103,6 +103,7 @@ A fairly long chain of rewrites obtained from Waldmeister:
 *}
 
 lemma "x \<squnion> -x = -x \<squnion> -(-x)"
+(* sledgehammer [remote_waldmeister e] *)
 proof -
   have F1: "ALL w v u. u \<squnion> (v \<squnion> w) = w \<squnion> (u \<squnion> v)"
     by (metis sup_assoc sup_comm)
