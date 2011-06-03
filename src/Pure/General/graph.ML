@@ -17,6 +17,8 @@ sig
   val dest: 'a T -> (key * key list) list
   val get_first: (key * ('a * (key list * key list)) -> 'b option) -> 'a T -> 'b option
   val fold: (key * ('a * (key list * key list)) -> 'b -> 'b) -> 'a T -> 'b -> 'b
+  val filter_nodes: (key * ('a * (key list * key list)) -> bool) -> 'a T -> key list
+  val filter: (key * ('a * (key list * key list)) -> bool) -> 'a T -> 'a T
   val minimals: 'a T -> key list
   val maximals: 'a T -> key list
   val subgraph: (key -> bool) -> 'a T -> 'a T
@@ -38,7 +40,7 @@ sig
   val add_edge: key * key -> 'a T -> 'a T
   val del_edge: key * key -> 'a T -> 'a T
   val merge: ('a * 'a -> bool) -> 'a T * 'a T -> 'a T                 (*exception DUP*)
-  val join: (key -> 'a * 'a -> 'a) (*exception DUP/SAME*) ->
+  val join: (key -> 'a * 'a -> 'a) (*exception DUP/SAME*) -> 
     'a T * 'a T -> 'a T                                               (*exception DUP*)
   val irreducible_paths: 'a T -> key * key -> key list list
   val all_paths: 'a T -> key * key -> key list list
@@ -99,6 +101,30 @@ fun subgraph P G =
     fun subg (k, (i, (preds, succs))) =
       if P k then Table.update (k, (i, (filter P preds, filter P succs))) else I;
   in Graph (fold_graph subg G Table.empty) end;
+
+(* Get list of node ids that satisfy a given predicate. *)
+fun filter_nodes P G = 
+    let fun graph_predicate (node as (k, (i, (preds, succs)))) accum = 
+            if P node then k :: accum             
+            else accum
+    in
+        fold_graph graph_predicate G []
+    end;
+
+(* Get subgraph of all nodes that satisfy a given predicate.
+   This implementation is pretty naive, two-pass. *)
+fun filter_graph P G = 
+    let val good_nodes = filter_nodes P G
+        fun is_good_node n =
+            List.exists 
+                (fn k =>
+                    case k of
+                        x => true
+                      | _ => false)
+                good_nodes
+    in
+        subgraph is_good_node G
+    end;
 
 fun get_entry (Graph tab) x =
   (case Table.lookup tab x of
@@ -288,6 +314,7 @@ fun merge_trans_acyclic eq (G1, G2) =
 (*final declarations of this structure!*)
 val map = map_nodes;
 val fold = fold_graph;
+val filter = filter_graph;
 
 end;
 

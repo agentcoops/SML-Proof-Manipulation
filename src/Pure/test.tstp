@@ -1,0 +1,11 @@
+fof(2, axiom,(hAPP(c_List_Orev(X4),X5)=X6<=>X5=hAPP(c_List_Orev(X4),X6)),file('/home/francisc/.isabelle/Isabelle2011/prob_e_1', fact_rev__swap)).
+fof(558, conjecture,hAPP(c_List_Orev(t_a),hAPP(c_List_Orev(t_a),v_xs))=v_xs,file('/home/francisc/.isabelle/Isabelle2011/prob_e_1', conj_0)).
+fof(559, negated_conjecture,~(hAPP(c_List_Orev(t_a),hAPP(c_List_Orev(t_a),v_xs))=v_xs),inference(assume_negation,[status(cth)],[558])).
+fof(603, negated_conjecture,~(hAPP(c_List_Orev(t_a),hAPP(c_List_Orev(t_a),v_xs))=v_xs),inference(fof_simplification,[status(thm)],[559,theory(equality)])).
+fof(608, plain,((~(hAPP(c_List_Orev(X4),X5)=X6)|X5=hAPP(c_List_Orev(X4),X6))&(~(X5=hAPP(c_List_Orev(X4),X6))|hAPP(c_List_Orev(X4),X5)=X6)),inference(fof_nnf,[status(thm)],[2])).
+cnf(610,plain,(X1=hAPP(c_List_Orev(X2),X3)|hAPP(c_List_Orev(X2),X1)!=X3),inference(split_conjunct,[status(thm)],[608])).
+cnf(1901,negated_conjecture,(hAPP(c_List_Orev(t_a),hAPP(c_List_Orev(t_a),v_xs))!=v_xs),inference(split_conjunct,[status(thm)],[603])).
+cnf(1913,plain,(hAPP(c_List_Orev(X1),hAPP(c_List_Orev(X1),X2))=X2),inference(er,[status(thm)],[610,theory(equality)])).
+cnf(12776,negated_conjecture,($false),inference(rw,[status(thm)],[1901,1913,theory(equality)])).
+cnf(12777,negated_conjecture,($false),inference(cn,[status(thm)],[12776,theory(equality)])).
+cnf(12778,negated_conjecture,($false),12777,['proof']).

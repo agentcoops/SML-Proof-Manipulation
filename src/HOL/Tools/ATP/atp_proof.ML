@@ -25,7 +25,6 @@ sig
 
   type 'a proof = 'a uniform_formula step list
 
-  val from_tstp_file : bool -> string -> string proof
   val strip_spaces : (char -> bool) -> string -> string
   val short_output : bool -> string -> string
   val string_for_failure : string -> failure -> string
@@ -37,6 +36,7 @@ sig
     -> string -> string * failure option
   val is_same_step : step_name * step_name -> bool
   val atp_proof_from_tstplike_string : bool -> string -> string proof
+  val from_tstp_file : bool -> string -> string proof
   val map_term_names_in_atp_proof :
     (string -> string) -> string proof -> string proof
   val nasty_atp_proof : string Symtab.table -> string proof -> string proof
@@ -52,13 +52,6 @@ datatype failure =
   SpassTooOld | VampireTooOld | NoPerl | NoLibwwwPerl | NoRealZ3 |
   MalformedInput | MalformedOutput | Interrupted | Crashed | InternalError |
   UnknownError of string
-
-(* This turns a TSTP file into a proof structure. *)
-fun from_tstp_file clean file_loc =
-    let val file_text = TextIO.inputAll (TextIO.openIn file_loc)
-    in
-        atp_proof_from_tstplike_string clean file_text
-    end
 
 fun strip_spaces_in_list _ [] = []
   | strip_spaces_in_list _ [c1] = if Char.isSpace c1 then [] else [str c1]
@@ -378,6 +371,13 @@ fun atp_proof_from_tstplike_string clean =
   #> parse_proof
   #> clean ? (sort (step_name_ord o pairself step_name)
               #> clean_up_dependencies [])
+
+(* This turns a TSTP file into a proof structure. *)
+fun from_tstp_file clean file_loc =
+    let val file_text = TextIO.inputAll (TextIO.openIn file_loc)
+    in
+        atp_proof_from_tstplike_string clean file_text
+    end
 
 fun map_term_names_in_term f (ATerm (s, ts)) =
   ATerm (f s, map (map_term_names_in_term f) ts)
