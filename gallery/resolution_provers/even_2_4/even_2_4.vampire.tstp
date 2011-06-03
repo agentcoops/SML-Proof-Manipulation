@@ -1,0 +1,114 @@
+% exec '/Users/blanchet/misc/vampire/x86-darwin/vampire' --proof tptp --mode casc -t 30 --thanks "Andrei and Krystof" --input_file '/Users/blanchet/.isabelle/prob_vampire_1' 2>&1
+% 2011-06-03 11:21:28
+Hi Geoff, go and have some cold beer while I am trying to solve this very hard problem!
+% remaining time: 299 next slice time: 33
+dis+1_6_bd=off:bs=off:lcm=predicate:nwc=1.5:nicw=on:sswsr=on:ss=included:st=1.5:sac=on:sp=occurrence_24 on prob_vampire
+Refutation found. Thanks to Andrei and Krystof!
+% SZS status Theorem for prob_vampire
+% SZS output start Proof for prob_vampire
+fof(f41_2,plain,(
+  $false),
+  inference(merge,[],[f33_1,f41_1])).
+fof(f41_1,plain,(
+  $false | $bdd1),
+  inference(resolution,[],[f40,f30_1])).
+fof(f30_1,plain,(
+  ~even_2_even(number_number_of(nat,bit0(bit0(bit1(pls))))) | $bdd1),
+  inference(cnf_transformation,[],[f30_D])).
+fof(f30_D,plain,(
+  ~even_2_even(number_number_of(nat,bit0(bit0(bit1(pls))))) <=> ~$bdd1),
+  introduced(splitting_component_introduction,[])).
+fof(f40,plain,(
+  even_2_even(number_number_of(nat,bit0(bit0(bit1(pls)))))),
+  inference(superposition,[],[f27,f36])).
+fof(f36,plain,(
+  number_number_of(nat,bit0(bit0(bit1(pls)))) = suc(suc(suc(suc(zero_zero(nat)))))),
+  inference(forward_demodulation,[],[f24,f23])).
+fof(f23,plain,(
+  number_number_of(nat,bit0(bit1(pls))) = suc(suc(zero_zero(nat)))),
+  inference(cnf_transformation,[],[f9])).
+fof(f9,axiom,(
+  number_number_of(nat,bit0(bit1(pls))) = suc(suc(zero_zero(nat)))),
+  file('/Users/blanchet/.isabelle/prob_vampire_1',unknown)).
+fof(f24,plain,(
+  number_number_of(nat,bit0(bit0(bit1(pls)))) = suc(suc(number_number_of(nat,bit0(bit1(pls)))))),
+  inference(cnf_transformation,[],[f8])).
+fof(f8,axiom,(
+  number_number_of(nat,bit0(bit0(bit1(pls)))) = suc(suc(number_number_of(nat,bit0(bit1(pls)))))),
+  file('/Users/blanchet/.isabelle/prob_vampire_1',unknown)).
+fof(f27,plain,(
+  even_2_even(suc(suc(suc(suc(zero_zero(nat))))))),
+  inference(resolution,[],[f26,f25])).
+fof(f25,plain,(
+  ( ! [X0] : (~even_2_even(X0) | even_2_even(suc(suc(X0)))) )),
+  inference(cnf_transformation,[],[f20])).
+fof(f20,plain,(
+  ! [X0] : (~even_2_even(X0) | even_2_even(suc(suc(X0))))),
+  inference(ennf_transformation,[],[f12])).
+fof(f12,plain,(
+  ! [X0] : (even_2_even(X0) => even_2_even(suc(suc(X0))))),
+  inference(rectify,[],[f7])).
+fof(f7,axiom,(
+  ! [X1] : (even_2_even(X1) => even_2_even(suc(suc(X1))))),
+  file('/Users/blanchet/.isabelle/prob_vampire_1',unknown)).
+fof(f26,plain,(
+  even_2_even(suc(suc(zero_zero(nat))))),
+  inference(resolution,[],[f25,f22])).
+fof(f22,plain,(
+  even_2_even(zero_zero(nat))),
+  inference(cnf_transformation,[],[f10])).
+fof(f10,axiom,(
+  even_2_even(zero_zero(nat))),
+  file('/Users/blanchet/.isabelle/prob_vampire_1',unknown)).
+fof(f33_1,plain,(
+  $false | ~$bdd1),
+  inference(subsumption_resolution,[],[f32_1,f26])).
+fof(f32_1,plain,(
+  ~even_2_even(suc(suc(zero_zero(nat)))) | ~$bdd1),
+  inference(superposition,[],[f29_1,f23])).
+fof(f29_1,plain,(
+  ~even_2_even(number_number_of(nat,bit0(bit1(pls)))) | ~$bdd1),
+  inference(splitting,[],[f21,f30_D])).
+fof(f21,plain,(
+  ~even_2_even(number_number_of(nat,bit0(bit0(bit1(pls))))) | ~even_2_even(number_number_of(nat,bit0(bit1(pls))))),
+  inference(cnf_transformation,[],[f19])).
+fof(f19,plain,(
+  ~even_2_even(number_number_of(nat,bit0(bit1(pls)))) | ~even_2_even(number_number_of(nat,bit0(bit0(bit1(pls)))))),
+  inference(ennf_transformation,[],[f11])).
+fof(f11,negated_conjecture,(
+  ~(even_2_even(number_number_of(nat,bit0(bit1(pls)))) & even_2_even(number_number_of(nat,bit0(bit0(bit1(pls))))))),
+  file('/Users/blanchet/.isabelle/prob_vampire_1',unknown)).
+% SZS output end Proof for prob_vampire
+------------------------------
+Version: Vampire 0.6 (revision 903)
+Termination reason: Refutation
+
+Active clauses: 12
+Passive clauses: 18
+Generated clauses: 22
+Final active clauses: 12
+Final passive clauses: 4
+Input formulas: 11
+Initial clauses: 5
+
+Pure predicates: 1
+Selected by SInE selection: 11
+SInE iterations: 1
+
+Fw subsumption resolutions: 1
+Fw demodulations: 1
+
+Binary resolution: 8
+Backward superposition: 5
+
+Split clauses: 1
+Split components: 2
+Unique components: 5
+Introduced splitting names: 1
+BDD propositional clauses: 2
+SAT solver clauses: 2
+
+Memory used: 127KB
+Time elapsed: 0.005 s
+------------------------------
+% Success in time 0.008 s
