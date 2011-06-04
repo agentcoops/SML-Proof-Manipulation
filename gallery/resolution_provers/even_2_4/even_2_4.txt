@@ -1,0 +1,36 @@
+The TPTP and TSTP (or SPASS) files were generated using the "sledgehammer"
+command in the ".thy" file. The files were not hand-edited in any way.
+
+E is the most well-behaved of the three resolution provers. It clearly
+identifies axioms, conjectures, etc., and has an explicit step ("6") that turns
+the conjecture around. It also clearly identifies the axiom's source, using the
+"file" syntax. Here the formulas are numbered from 1, following the order in the
+TPTP files, but this cannot always be assumed.
+
+SPASS has its own output format. For the TPTP/TSTP integration (points 1 and 2
+of README), I'd suggest ignoring it. For Sledgehammer, you will get a map
+telling you that clause 2 is "fact_even_Ointros_I1_J", clause 11 is "conj_0",
+etc. That map is computed from the "set_ClauseFormulaRelation" in the SPASS
+output. It's more tricky than it seems, because there are two levels of
+indirection (what's not obvious in this example). But for now don't worry about
+it.
+
+Vampire is a special pain for a number of reasons. First, axioms are not clearly
+labeled; the "file" syntax always calls them "unknown". But a name like "f7"
+reveals that this is the 7th formula in the TPTP file. (For steps 1 and 2, this
+doesn't matter much, but for Sledgehammer this will be important.)
+
+Second, the steps are out of order. In fact, it might seem like they are exactly
+reversed compared with the TSTP proofs given by E, but that's also not always
+the case. In my experience, the steps can be reordered numerically (with "f10" <
+"f22" < "f33_1" < "f36" -- ignoring the "f" prefix and suffixes like "_1" and
+"_D"), but the superior approach would be to exploit the dependencies and/or to
+ignore the order altogether. In other words, once you have a directed graph in
+memory and that graph has no cycles, you've won.
+
+Third, notice that any step that is not an axiom or a negated conjecture is
+simply marked with "plain". Hence, you don't have the nice information that E
+gives you telling you whether a step is "tainted" by the negated conjecture or
+not. This shouldn't matter: Once you have a graph and the axiom and negated
+conjecture are marked properly on that graph, you can read that information more
+or less directly "off" the graph (or even cache it on the nodes).

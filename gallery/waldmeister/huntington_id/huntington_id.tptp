@@ -1,0 +1,8 @@
+cnf(fact_huntington, axiom,
+    (sup(uminus(sup(uminus(X), uminus(Y))), uminus(sup(uminus(X), Y))) = X)).
+cnf(fact_sup__assoc, axiom,
+    (sup(X, sup(Y, Z)) = sup(sup(X, Y), Z))).
+cnf(fact_sup__comm, axiom,
+    (sup(X, Y) = sup(Y, X))).
+cnf(conj_0, hypothesis,
+    (sup(x, uminus(x)) != sup(uminus(x), uminus(uminus(x))))).
