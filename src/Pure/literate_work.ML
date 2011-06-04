@@ -130,7 +130,9 @@ datatype proof_role = Axiom | Conjecture | NegatedConjecture | Plain;
 
 type proof_node = {
      formula: string uniform_formula,
-     role: proof_role
+     role: proof_role,
+     inference: string,
+     dependents: int list
 }
 
 (* Graph needs to indicate beginning and end of proof for ease of manipulation. *)

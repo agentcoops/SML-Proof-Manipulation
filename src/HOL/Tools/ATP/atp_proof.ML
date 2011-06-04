@@ -36,7 +36,7 @@ sig
     -> string -> string * failure option
   val is_same_step : step_name * step_name -> bool
   val atp_proof_from_tstplike_string : bool -> string -> string proof
-  val from_tstp_file : bool -> string -> string proof
+  val atp_proof_from_tstp_file : bool -> string -> string proof
   val map_term_names_in_atp_proof :
     (string -> string) -> string proof -> string proof
   val nasty_atp_proof : string Symtab.table -> string proof -> string proof
@@ -296,7 +296,32 @@ val parse_tstp_line =
                  (* Vampire's equality proxy axiom *)
                  Inference (name, phi, map (rpair NONE) deps)
                | _ => raise Fail "malformed definition")
-            | _ => Inference (name, phi, map (rpair NONE) deps)
+            | other => Inference (name, phi, map (rpair NONE) deps)
+          end)
+
+(* This obtains slightly more verbose information from the TSTP output. *)
+val parse_full_tstp_line =
+  ((Scan.this_string "fof" || Scan.this_string "cnf") -- $$ "(")
+    |-- scan_general_id --| $$ "," -- Symbol.scan_id --| $$ ","
+    -- parse_formula -- parse_tstp_extra_arguments --| $$ ")" --| $$ "."
+   >> (fn (((num, role), phi), deps) =>
+          let
+            val (name, deps) =
+              case deps of
+                ["file", _, s] =>
+                ((num, if s = vampire_unknown_fact then NONE else SOME s), [])
+              | _ => ((num, NONE), deps)
+          in
+            case role of
+              "definition" =>
+              (case phi of
+                 AConn (AIff, [phi1 as AAtom _, phi2]) =>
+                 Definition (name, phi1, phi2)
+               | AAtom (ATerm ("c_equal", _)) =>
+                 (* Vampire's equality proxy axiom *)
+                 Inference (name, phi, map (rpair NONE) deps)
+               | _ => raise Fail "malformed definition")
+            | other => Inference (name, phi, map (rpair NONE) deps)
           end)
 
 (**** PARSING OF VAMPIRE OUTPUT ****)
@@ -372,12 +397,6 @@ fun atp_proof_from_tstplike_string clean =
   #> clean ? (sort (step_name_ord o pairself step_name)
               #> clean_up_dependencies [])
 
-(* This turns a TSTP file into a proof structure. *)
-fun from_tstp_file clean file_loc =
-    let val file_text = TextIO.inputAll (TextIO.openIn file_loc)
-    in
-        atp_proof_from_tstplike_string clean file_text
-    end
 
 fun map_term_names_in_term f (ATerm (s, ts)) =
   ATerm (f s, map (map_term_names_in_term f) ts)

@@ -34,6 +34,8 @@ sig
   val strs: string list -> T
   val markup: Markup.T -> T list -> T
   val mark: Markup.T -> T -> T
+  val mark_str: Markup.T * string -> T
+  val marks_str: Markup.T list * string -> T
   val keyword: string -> T
   val command: string -> T
   val markup_chunks: Markup.T -> T list -> T
@@ -62,18 +64,6 @@ sig
   val writeln: T -> unit
   val to_ML: T -> ML_Pretty.pretty
   val from_ML: ML_Pretty.pretty -> T
-  type pp
-  val pp: (term -> T) * (typ -> T) * (sort -> T) * (class list -> T) * (arity -> T) -> pp
-  val term: pp -> term -> T
-  val typ: pp -> typ -> T
-  val sort: pp -> sort -> T
-  val classrel: pp -> class list -> T
-  val arity: pp -> arity -> T
-  val string_of_term: pp -> term -> string
-  val string_of_typ: pp -> typ -> string
-  val string_of_sort: pp -> sort -> string
-  val string_of_classrel: pp -> class list -> string
-  val string_of_arity: pp -> arity -> string
 end;
 
 structure Pretty: PRETTY =
@@ -138,9 +128,12 @@ fun block prts = blk (2, prts);
 val strs = block o breaks o map str;
 
 fun markup m prts = markup_block m (0, prts);
-fun mark m prt = markup m [prt];
-fun keyword name = mark Markup.keyword (str name);
-fun command name = mark Markup.command (str name);
+fun mark m prt = if m = Markup.empty then prt else markup m [prt];
+fun mark_str (m, s) = mark m (str s);
+fun marks_str (ms, s) = fold_rev mark ms (str s);
+
+fun keyword name = mark_str (Markup.keyword, name);
+fun command name = mark_str (Markup.command, name);
 
 fun markup_chunks m prts = markup m (fbreaks prts);
 val chunks = markup_chunks Markup.empty;
@@ -326,28 +319,5 @@ fun from_ML (ML_Pretty.Block (m, prts, ind)) = block_markup m (ind, map from_ML 
   | from_ML (ML_Pretty.Break b) = Break b;
 
 end;
-
-
-
-(** abstract pretty printing context **)
-
-datatype pp =
-  PP of (term -> T) * (typ -> T) * (sort -> T) * (class list -> T) * (arity -> T);
-
-val pp = PP;
-
-fun pp_fun f (PP x) = f x;
-
-val term     = pp_fun #1;
-val typ      = pp_fun #2;
-val sort     = pp_fun #3;
-val classrel = pp_fun #4;
-val arity    = pp_fun #5;
-
-val string_of_term     = string_of oo term;
-val string_of_typ      = string_of oo typ;
-val string_of_sort     = string_of oo sort;
-val string_of_classrel = string_of oo classrel;
-val string_of_arity    = string_of oo arity;
 
 end;
