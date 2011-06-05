@@ -56,7 +56,7 @@ sig
   val parse_formula :
     string list -> (string, 'a, string fo_term) formula * string list
   val atp_proof_from_tstplike_proof : string problem -> string -> string proof
-  (*val atp_proof_from_tstp_file : bool -> string -> string proof*)
+  val atp_proof_from_tstp_file : string -> string -> string proof
   val clean_up_atp_proof_dependencies : string proof -> string proof
   val map_term_names_in_atp_proof :
     (string -> string) -> string proof -> string proof
@@ -474,13 +474,15 @@ fun atp_proof_from_tstplike_proof _ "" = []
     |> parse_proof problem
     |> sort (step_name_ord o pairself step_name)
 
-(* This turns a TSTP file into a proof structure. *)
-(*fun atp_proof_from_tstp_file clean file_loc =
-    let val file_text = TextIO.inputAll (TextIO.openIn file_loc)
-    in
-        atp_proof_from_tstplike_proof clean file_text
-    end*)
 
+(* This turns a TSTP file into a proof structure. *)
+fun atp_proof_from_tstp_file problem_loc proof_loc =
+    let val proof_text = TextIO.inputAll (TextIO.openIn proof_loc)
+        (* figure out more about the use of problems here...*)
+        val problem = [] (*ATP_Problem.atp_problem_from_tptp_file problem_loc*)    
+    in
+        atp_proof_from_tstplike_proof problem proof_text
+    end
 
 fun clean_up_dependencies _ [] = []
   | clean_up_dependencies seen ((step as Definition (name, _, _)) :: steps) =

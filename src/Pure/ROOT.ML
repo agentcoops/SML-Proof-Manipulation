@@ -1,4 +1,12 @@
 (** Pure Isabelle **)
+(*
+
+I've made small changes to this file to get a sufficient development environment configured.
+None of these changes should be merged into Isabelle upon completion of the summer.
+
+-C
+*)
+
 
 structure Distribution =     (*filled-in by makedist*)
 struct

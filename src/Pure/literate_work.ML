@@ -17,18 +17,17 @@ open Graph;
 
 
 (* This is just actually getting a proof... Some basic SML manipulation. *)
-val test_proof = ATP_Proof.from_tstp_file true "test.tstp";
+val test_proof = ATP_Proof.atp_proof_from_tstp_file "" "test.tstp";
 val an_element = nth test_proof 0;
 val tuple_for_play = 
     case an_element of Inference (name, formula, steps) => (name, formula, steps);
 val element_name = #1 tuple_for_play;
 
-
 (* Table sample code... *)
 val table1 = Symtab.make [("foo", "bar"), ("baz", "bin")];
 
 (* Graph sample code... *)
-val graph1: string uniform_formula T = Graph.empty;
+val graph1: (string, string, string fo_term) formula T = Graph.empty;
 
 (* 
 datatype 'a T = Graph of ('a * (key list * key list)) Table.table;
@@ -63,7 +62,7 @@ fun proof_to_graph proof =
     List.foldl add_proof_step_to_graph Graph.empty proof;
 
 fun graph_from_tstp_file file =
-    ATP_Proof.from_tstp_file true file |> proof_to_graph
+    ATP_Proof.atp_proof_from_tstp_file "" file |> proof_to_graph
 
 (* 
 
