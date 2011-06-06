@@ -34,12 +34,23 @@ datatype 'a T = Graph of ('a * (key list * key list)) Table.table;
 So, a key maps to (content, (preds, succes))
 *)
 
+(* Ah! so in this version, we must filter out the actual dependencies. 
+ This could be a much nicer implementation... Need something like flatmap. 
+ Also probably better way to check is int... blah. *)
+fun dependencies_from_inference (Inference (_, _, justifications)) = 
+    (List.map (fn justification => #1 justification |> Int.fromString) 
+              justifications)
+        |> List.filter Option.isSome
+        |> List.map (Int.toString o Option.valOf); 
+      
 (* Do we need to preserve the string names or just keep the numerical identifiers? *)
-fun add_proof_step_to_graph (Inference (name, formula, justifications), graph) =
-    let val graph_with_node = new_node (#1 name, formula) graph
-        fun add_justification_edge (x, graph) = add_edge (#1 x, #1 name) graph
+fun add_proof_step_to_graph (inference as Inference (name_pair, formula, justifications), graph) =
+    let val name = #1 name_pair
+        val graph_with_node = new_node (name, formula) graph
+        val dependencies = dependencies_from_inference inference
+        fun add_justification_edge (x, graph) = add_edge (x, name) graph     
     in
-        List.foldl add_justification_edge graph_with_node justifications
+        List.foldl add_justification_edge graph_with_node dependencies
     end;
 
 val graph_with_step = add_proof_step_to_graph (an_element, graph1);
@@ -63,6 +74,8 @@ fun proof_to_graph proof =
 
 fun graph_from_tstp_file file =
     ATP_Proof.atp_proof_from_tstp_file "" file |> proof_to_graph
+
+val proof_graph = proof_to_graph test_proof;
 
 (* 
 
