@@ -43,7 +43,8 @@ sig
    QUESTION: does this seem good? would a tuple be better here? should
    definitions be handled with option types in the record? *)
 
-  type 'a step = 
+  datatype 'a step = 
+       Inference of
        {name: step_name, 
         kind: formula_kind,
         identifier: 'a option,
@@ -238,12 +239,14 @@ fun step_name_ord p =
 
 (* TODO: add the formula_kind, and also make the last piece (step_name
  list) more robust and follow the TPTP. *)
-type 'a step = 
-     {name: step_name, 
-      kind: formula_kind,
-      identifier: 'a option,
-      formula: 'a,
-      justification: step_name list}
+
+datatype 'a step = 
+         Inference of
+         {name: step_name, 
+          kind: formula_kind,
+          identifier: 'a option,
+          formula: 'a,
+          justification: step_name list}
      
 type 'a proof = ('a, 'a, 'a fo_term) formula step list
                 
@@ -429,19 +432,19 @@ fun parse_tstp_line problem =
               "definition" =>
               (case phi of
                  AConn (AIff, [phi1 as AAtom _, phi2]) =>
-                 {name = name, kind = Definition, identifier = SOME phi1,
-                  formula = phi2, justification = map (rpair NONE) deps}
-
+                 Inference {name = name, kind = Definition, identifier = SOME phi1,
+                            formula = phi2, justification = map (rpair NONE) deps}
+                 
                | AAtom (ATerm ("equal", _)) =>
                  (* Vampire's equality proxy axiom *)
-                 {name = name, kind = Plain, identifier = NONE,
-                  formula = phi, justification = map (rpair NONE) deps}
+                 Inference {name = name, kind = Plain, identifier = NONE,
+                            formula = phi, justification = map (rpair NONE) deps}
                | _ => raise UNRECOGNIZED_ATP_PROOF ())
             | _ => 
-              {name = name, kind = Plain, identifier = NONE, 
-               formula = phi, justification = map (rpair NONE) deps}
+              Inference {name = name, kind = Plain, identifier = NONE, 
+                         formula = phi, justification = map (rpair NONE) deps}
           end)
-
+  
 (**** PARSING OF SPASS OUTPUT ****)
 
 (* SPASS returns clause references of the form "x.y". We ignore "y", whose role
@@ -476,8 +479,8 @@ fun parse_spass_line x =
   (scan_general_id --| $$ "[" --| $$ "0" --| $$ ":" --| Symbol.scan_id
      -- parse_spass_annotations --| $$ "]" -- parse_horn_clause --| $$ "."
    >> (fn ((num, deps), u) => (* TODO: figure out spass role information... *)
-          {name = (num, NONE), role = Plain, identifier = NONE, formula = u, 
-           justification = map (rpair NONE) deps))) x
+          Inference {name = (num, NONE), role = Plain, identifier = NONE, formula = u, 
+                     justification = map (rpair NONE) deps})) x
 
 fun parse_line problem = parse_tstp_line problem || parse_spass_line
 fun parse_proof problem s =
@@ -505,18 +508,22 @@ fun atp_proof_from_tstp_file problem_loc proof_loc =
     end
 
 fun clean_up_dependencies _ [] = []
-  | clean_up_dependencies seen ((step as Definition (name, _, _)) :: steps) =
-    step :: clean_up_dependencies (name :: seen) steps
-  | clean_up_dependencies seen (Inference (name, u, deps) :: steps) =
-    Inference (name, u,
-               map_filter (fn dep => find_first (is_same_atp_step dep) seen)
-                          deps) ::
-    clean_up_dependencies (name :: seen) steps
-
+  | clean_up_dependencies seen ((step as Inference inf) :: steps) =
+    step :: clean_up_dependencies (#name inf :: seen) steps
+  | clean_up_dependencies seen (Inference inf :: steps) =
+    Inference 
+        {name = #name inf, kind = #kind inf, 
+         identifier = #identifier inf,
+         formula = #formula inf,
+         justification = map_filter 
+                             (fn dep => find_first (is_same_atp_step dep) seen)
+                             (#justification inf)} 
+    :: clean_up_dependencies (#name inf :: seen) steps
+    
 fun clean_up_atp_proof_dependencies proof = clean_up_dependencies [] proof
-
+                                            
 fun map_term_names_in_term f (ATerm (s, ts)) =
-  ATerm (f s, map (map_term_names_in_term f) ts)
+    ATerm (f s, map (map_term_names_in_term f) ts)
 fun map_term_names_in_formula f (AQuant (q, xs, phi)) =
     AQuant (q, xs, map_term_names_in_formula f phi)
   | map_term_names_in_formula f (AConn (c, phis)) =
