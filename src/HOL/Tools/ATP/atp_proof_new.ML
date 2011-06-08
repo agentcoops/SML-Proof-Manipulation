@@ -36,11 +36,20 @@ sig
     UnknownError of string
 
   type step_name = string * string option
+                   
+  (* TODO: make the last piece (step_name list) more robust and follow
+   the TPTP. 
 
-  datatype 'a step =
-    Definition of step_name * 'a * 'a |
-    Inference of step_name * 'a * step_name list
+   QUESTION: does this seem good? would a tuple be better here? should
+   definitions be handled with option types in the record? *)
 
+  type 'a step = 
+       {name: step_name, 
+        kind: formula_kind,
+        identifier: 'a option,
+        formula: 'a,
+        justification: step_name list}
+           
   type 'a proof = ('a, 'a, 'a fo_term) formula step list
 
   val short_output : bool -> string -> string
@@ -227,14 +236,19 @@ fun step_name_ord p =
     | (SOME i, SOME j) => int_ord (i, j)
   end
 
-datatype 'a step =
-  Definition of step_name * 'a * 'a |
-  Inference of step_name * 'a * step_name list
-
+(* TODO: add the formula_kind, and also make the last piece (step_name
+ list) more robust and follow the TPTP. *)
+type 'a step = 
+     {name: step_name, 
+      kind: formula_kind,
+      identifier: 'a option,
+      formula: 'a,
+      justification: step_name list}
+     
 type 'a proof = ('a, 'a, 'a fo_term) formula step list
-
-fun step_name (Definition (name, _, _)) = name
-  | step_name (Inference (name, _, _)) = name
+                
+(*fun step_name (Definition (name, _, _)) = name
+  | step_name (Inference (name, _, _)) = name*)
 
 (**** PARSING OF TSTP FORMAT ****)
 
@@ -415,12 +429,17 @@ fun parse_tstp_line problem =
               "definition" =>
               (case phi of
                  AConn (AIff, [phi1 as AAtom _, phi2]) =>
-                 Definition (name, phi1, phi2)
+                 {name = name, kind = Definition, identifier = SOME phi1,
+                  formula = phi2, justification = map (rpair NONE) deps}
+
                | AAtom (ATerm ("equal", _)) =>
                  (* Vampire's equality proxy axiom *)
-                 Inference (name, phi, map (rpair NONE) deps)
+                 {name = name, kind = Plain, identifier = NONE,
+                  formula = phi, justification = map (rpair NONE) deps}
                | _ => raise UNRECOGNIZED_ATP_PROOF ())
-            | _ => Inference (name, phi, map (rpair NONE) deps)
+            | _ => 
+              {name = name, kind = Plain, identifier = NONE, 
+               formula = phi, justification = map (rpair NONE) deps}
           end)
 
 (**** PARSING OF SPASS OUTPUT ****)
@@ -456,8 +475,9 @@ fun parse_horn_clause x =
 fun parse_spass_line x =
   (scan_general_id --| $$ "[" --| $$ "0" --| $$ ":" --| Symbol.scan_id
      -- parse_spass_annotations --| $$ "]" -- parse_horn_clause --| $$ "."
-   >> (fn ((num, deps), u) =>
-          Inference ((num, NONE), u, map (rpair NONE) deps))) x
+   >> (fn ((num, deps), u) => (* TODO: figure out spass role information... *)
+          {name = (num, NONE), role = Plain, identifier = NONE, formula = u, 
+           justification = map (rpair NONE) deps))) x
 
 fun parse_line problem = parse_tstp_line problem || parse_spass_line
 fun parse_proof problem s =

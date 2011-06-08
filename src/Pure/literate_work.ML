@@ -5,7 +5,7 @@ If anything here is horribly wrong -- that is, if I'm butchering any of these el
 undocumented data structures -- please let me know!
 
 For a while, until I get my bearings, this is just going to be a semi-literate programming
-experiment that could result in code that goes in to the final library.
+experiment that will eventually be restructured into a proper library.
 
 AUTHOR: coopf
 *)
@@ -42,6 +42,8 @@ fun dependencies_from_inference (Inference (_, _, justifications)) =
               justifications)
         |> List.filter Option.isSome
         |> List.map (Int.toString o Option.valOf); 
+
+(* really, though, in the new datastructure we want *)
       
 (* Do we need to preserve the string names or just keep the numerical identifiers? *)
 fun add_proof_step_to_graph (inference as Inference (name_pair, formula, justifications), graph) =
@@ -109,7 +111,7 @@ Needed:
 *)
 
 (* a way to determine if any given clause is negated and to remove
-negation. *) 
+negation. this is all actually worthless it seems... *) 
 
 fun formula_from_inference (Inference(_, formula, _)) = formula
 

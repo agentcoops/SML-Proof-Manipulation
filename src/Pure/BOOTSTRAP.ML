@@ -36,8 +36,3 @@ use "proofterm.ML";
 use "type.ML";
 use "envir.ML";
 
-use "../HOL/Tools/ATP/atp_util.ML";
-(* Load the TPSP parser, etc. *)
-(*
-use "../HOL/Tools/ATP/atp_problem_new.ML"; 
-use "../HOL/Tools/ATP/atp_proof_new.ML";*)

@@ -18,7 +18,9 @@ sig
   datatype 'a ho_type = AType of 'a | AFun of 'a ho_type * 'a ho_type
 
   datatype format = CNF | CNF_UEQ | FOF | TFF | THF
-  datatype formula_kind = Axiom | Definition | Lemma | Hypothesis | Conjecture
+  datatype formula_kind = 
+           Axiom | Definition | Lemma | Hypothesis 
+         | Conjecture | NegatedConjecture | Plain
   datatype 'a problem_line =
     Decl of string * 'a * 'a ho_type |
     Formula of string * formula_kind * ('a, 'a ho_type, 'a fo_term) formula
@@ -102,7 +104,9 @@ datatype ('a, 'b, 'c) formula =
 datatype 'a ho_type = AType of 'a | AFun of 'a ho_type * 'a ho_type
 
 datatype format = CNF | CNF_UEQ | FOF | TFF | THF
-datatype formula_kind = Axiom | Definition | Lemma | Hypothesis | Conjecture
+datatype formula_kind = 
+         Axiom | Definition | Lemma | Hypothesis |
+         Conjecture | NegatedConjecture | Plain
 datatype 'a problem_line =
   Decl of string * 'a * 'a ho_type |
   Formula of string * formula_kind * ('a, 'a ho_type, 'a fo_term) formula
