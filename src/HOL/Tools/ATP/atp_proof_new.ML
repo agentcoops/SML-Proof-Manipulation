@@ -11,6 +11,7 @@ sig
   type 'a fo_term = 'a ATP_Problem.fo_term
   type ('a, 'b, 'c) formula = ('a, 'b, 'c) ATP_Problem.formula
   type 'a problem = 'a ATP_Problem.problem
+  type formula_kind = ATP_Problem.formula_kind
 
   exception UNRECOGNIZED_ATP_PROOF of unit
 
@@ -36,7 +37,7 @@ sig
     UnknownError of string
 
   type step_name = string * string option
-                   
+                                    
   (* TODO: make the last piece (step_name list) more robust and follow
    the TPTP. 
 
@@ -248,6 +249,8 @@ datatype 'a step =
           formula: 'a,
           justification: step_name list}
      
+fun step_name (Inference inf) = #name inf;
+
 type 'a proof = ('a, 'a, 'a fo_term) formula step list
                 
 (*fun step_name (Definition (name, _, _)) = name
@@ -479,7 +482,7 @@ fun parse_spass_line x =
   (scan_general_id --| $$ "[" --| $$ "0" --| $$ ":" --| Symbol.scan_id
      -- parse_spass_annotations --| $$ "]" -- parse_horn_clause --| $$ "."
    >> (fn ((num, deps), u) => (* TODO: figure out spass role information... *)
-          Inference {name = (num, NONE), role = Plain, identifier = NONE, formula = u, 
+          Inference {name = (num, NONE), kind = Plain, identifier = NONE, formula = u, 
                      justification = map (rpair NONE) deps})) x
 
 fun parse_line problem = parse_tstp_line problem || parse_spass_line
@@ -529,11 +532,12 @@ fun map_term_names_in_formula f (AQuant (q, xs, phi)) =
   | map_term_names_in_formula f (AConn (c, phis)) =
     AConn (c, map (map_term_names_in_formula f) phis)
   | map_term_names_in_formula f (AAtom t) = AAtom (map_term_names_in_term f t)
-fun map_term_names_in_step f (Definition (name, phi1, phi2)) =
-    Definition (name, map_term_names_in_formula f phi1,
-                map_term_names_in_formula f phi2)
-  | map_term_names_in_step f (Inference (name, phi, deps)) =
-    Inference (name, map_term_names_in_formula f phi, deps)
+fun map_term_names_in_step f (Inference inf) =
+    Inference 
+        {name = #name inf, kind = #kind inf, 
+         identifier = Option.map (map_term_names_in_formula f) (#identifier inf),
+         formula = map_term_names_in_formula f (#formula inf),
+         justification = #justification inf}
 fun map_term_names_in_atp_proof f = map (map_term_names_in_step f)
 
 fun nasty_name pool s = s |> Symtab.lookup pool |> the_default s
