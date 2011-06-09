@@ -57,6 +57,7 @@ sig
   val is_built_in_tptp_symbol : string -> bool
   val is_tptp_variable : string -> bool
   val is_tptp_user_symbol : string -> bool
+  val kind_for_string : string -> formula_kind
   val mk_anot : ('a, 'b, 'c) formula -> ('a, 'b, 'c) formula
   val mk_aconn :
     connective -> ('a, 'b, 'c) formula -> ('a, 'b, 'c) formula
@@ -112,6 +113,8 @@ datatype 'a problem_line =
   Formula of string * formula_kind * ('a, 'a ho_type, 'a fo_term) formula
              * string fo_term option * string fo_term option
 type 'a problem = (string * 'a problem_line list) list
+
+
 
 (* official TPTP syntax *)
 val tptp_cnf = "cnf"
@@ -194,6 +197,16 @@ fun string_for_kind Axiom = "axiom"
   | string_for_kind Lemma = "lemma"
   | string_for_kind Hypothesis = "hypothesis"
   | string_for_kind Conjecture = "conjecture"
+  | string_for_kind NegatedConjecture = "negated_conjecture"
+  | string_for_kind Plain = "plain"
+
+fun kind_for_string "axiom" = Axiom
+  | kind_for_string "definition" = Definition
+  | kind_for_string "lemma" = Lemma
+  | kind_for_string "hypothesis" = Hypothesis
+  | kind_for_string "conjecture" = Conjecture
+  | kind_for_string "negated_conjecture" = NegatedConjecture
+  | kind_for_string _ = Plain
 
 fun strip_tff_type (AFun (AType s, ty)) = strip_tff_type ty |>> cons s
   | strip_tff_type (AFun (AFun _, _)) =

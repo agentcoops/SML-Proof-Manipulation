@@ -444,7 +444,7 @@ fun parse_tstp_line problem =
                             formula = phi, justification = map (rpair NONE) deps}
                | _ => raise UNRECOGNIZED_ATP_PROOF ())
             | _ => 
-              Inference {name = name, kind = Plain, identifier = NONE, 
+              Inference {name = name, kind = ATP_Problem.kind_for_string role, identifier = NONE, 
                          formula = phi, justification = map (rpair NONE) deps}
           end)
   
