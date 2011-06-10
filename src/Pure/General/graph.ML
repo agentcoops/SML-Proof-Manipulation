@@ -41,7 +41,7 @@ sig
   val del_edge: key * key -> 'a T -> 'a T
   val reverse_edge: key * key -> 'a T -> 'a T
   val reverse_edges: (key * key) list -> 'a T -> 'a T
-  val reverse_edges_node: 'a T -> key -> 'a T
+  val reverse_edges_node: key -> 'a T -> 'a T
   val merge: ('a * 'a -> bool) -> 'a T * 'a T -> 'a T                 (*exception DUP*)
   val join: (key -> 'a * 'a -> 'a) (*exception DUP/SAME*) ->
     'a T * 'a T -> 'a T                                               (*exception DUP*)
@@ -232,7 +232,7 @@ fun reverse_edge (x, y) G =
 fun reverse_edges [] G = G
   | reverse_edges ((x, y) :: tl) G = reverse_edge (x, y) G |> reverse_edges tl
 
-fun reverse_edges_node G node = 
+fun reverse_edges_node node G = 
     let val succs = imm_succs G node
         val preds = imm_preds G node
         fun constant_list_of_same_size value lst = 

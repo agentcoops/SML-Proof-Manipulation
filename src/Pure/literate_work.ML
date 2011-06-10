@@ -187,13 +187,17 @@ fun conjectures graph =
 fun node_contraposition graph node_id = 
     let val (ProofNode node) = Graph.get_node graph node_is
         val negated_formula = #formula node |> negated_formula
+       (* I think this is right... perhaps I want to separate out 
+          changing of kind from actual contraposition? *)
         val new_kind = 
             case #kind node of
-                NegatedConjecture => Plain
+                NegatedConjecture => Plain 
               | other => other
+        val new_node = ProofNode {formula = negated_formula, kind = new_kind}
     in
-        
-
+        graph |> Graph.map_node node_id (fn x => new_node) 
+              (* ack, this actually has to just be the nodes that are negated_conjecture... *)
+              |> Graph.reverse_edges_node node_id 
     end;
     
 
