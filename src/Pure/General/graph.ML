@@ -40,6 +40,8 @@ sig
   val add_edge: key * key -> 'a T -> 'a T
   val del_edge: key * key -> 'a T -> 'a T
   val reverse_edge: key * key -> 'a T -> 'a T
+  val reverse_edges: (key * key) list -> 'a T -> 'a T
+  val reverse_edges_node: 'a T -> key -> 'a T
   val merge: ('a * 'a -> bool) -> 'a T * 'a T -> 'a T                 (*exception DUP*)
   val join: (key -> 'a * 'a -> 'a) (*exception DUP/SAME*) ->
     'a T * 'a T -> 'a T                                               (*exception DUP*)
@@ -220,6 +222,7 @@ fun del_edge (x, y) G =
       |> map_entry x (fn (i, (preds, succs)) => (i, (preds, remove_key y succs)))
   else G;
 
+(* Reverse edges! Some of these implementations could be made more robust... *)
 fun reverse_edge (x, y) G =
     if is_edge G (x, y) then
         G |> map_entry y (fn (i, (preds, succs)) => (i, (remove_key x preds, x :: succs)))
