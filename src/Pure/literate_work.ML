@@ -19,9 +19,6 @@ open Graph;
 (* This is just actually getting a proof... Some basic SML manipulation. *)
 val test_proof = ATP_Proof.atp_proof_from_tstp_file "" "test.tstp";
 val an_element = nth test_proof 0;
-val tuple_for_play = 
-    case an_element of Inference (name, formula, steps) => (name, formula, steps);
-val element_name = #1 tuple_for_play;
 
 (* Table sample code... *)
 val table1 = Symtab.make [("foo", "bar"), ("baz", "bin")];
@@ -37,18 +34,27 @@ So, a key maps to (content, (preds, succes))
 (* Ah! so in this version, we must filter out the actual dependencies. 
  This could be a much nicer implementation... Need something like flatmap. 
  Also probably better way to check is int... blah. *)
-fun dependencies_from_inference (Inference (_, _, justifications)) = 
+fun dependencies_from_inference (Inference inf) = 
     (List.map (fn justification => #1 justification |> Int.fromString) 
-              justifications)
+              (#justification inf))
         |> List.filter Option.isSome
-        |> List.map (Int.toString o Option.valOf); 
+        |> List.map (Int.toString o Option.valOf);
 
-(* really, though, in the new datastructure we want *)
-      
+(* We now need a more robust node type than before. Role information,
+for example, must be included. I think this will be extended alot so, at
+least for now, a record type will make development easier... *)
+datatype proof_node = ProofNode of {
+         formula: (string, string, string fo_term) formula,
+         kind: ATP_Problem.formula_kind
+         (*, justification? *)
+}
+
 (* Do we need to preserve the string names or just keep the numerical identifiers? *)
-fun add_proof_step_to_graph (inference as Inference (name_pair, formula, justifications), graph) =
-    let val name = #1 name_pair
-        val graph_with_node = new_node (name, formula) graph
+fun add_proof_step_to_graph (inference as Inference inf, graph) =
+    let val name = #1 (#name inf)
+        val graph_with_node = 
+            new_node (name, ProofNode {formula = #formula inf, kind = #kind inf}) 
+                     graph
         val dependencies = dependencies_from_inference inference
         fun add_justification_edge (x, graph) = add_edge (x, name) graph     
     in

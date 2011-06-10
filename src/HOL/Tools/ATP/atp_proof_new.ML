@@ -273,6 +273,9 @@ val scan_general_id =
   || Scan.repeat ($$ "$") -- Scan.many1 Symbol.is_letdig
      >> (fn (ss1, ss2) => implode ss1 ^ implode ss2)
 
+
+(* TODO: this should parse out the inference information in a way more
+in keeping with the TSTP standard. *)
 (* Generalized first-order terms, which include file names, numbers, etc. *)
 fun parse_annotation x =
   ((scan_general_id ::: Scan.repeat ($$ " " |-- scan_general_id))
@@ -447,7 +450,7 @@ fun parse_tstp_line problem =
               Inference {name = name, kind = ATP_Problem.kind_for_string role, identifier = NONE, 
                          formula = phi, justification = map (rpair NONE) deps}
           end)
-  
+ 
 (**** PARSING OF SPASS OUTPUT ****)
 
 (* SPASS returns clause references of the form "x.y". We ignore "y", whose role
