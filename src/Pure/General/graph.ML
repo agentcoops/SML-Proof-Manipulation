@@ -226,13 +226,18 @@ fun reverse_edge (x, y) G =
           |> map_entry x (fn (i, (preds, succs)) => (i, (y :: preds, remove_key y succs)))
     else G;
 
+fun reverse_edges [] G = G
+  | reverse_edges ((x, y) :: tl) G = reverse_edge (x, y) G |> reverse_edges tl
+
 fun reverse_edges_node G node = 
     let val succs = imm_succs G node
         val preds = imm_preds G node
+        fun constant_list_of_same_size value lst = 
+            List.tabulate (length lst, fn x => value) 
     in
-
-    end
-
+        G |> reverse_edges (ListPair.zip (succs, constant_list_of_same_size node succs))
+          |> reverse_edges (ListPair.zip (preds, constant_list_of_same_size node preds))
+    end;
 
 fun diff_edges G1 G2 =
   flat (dest G1 |> map (fn (x, ys) => ys |> map_filter (fn y =>
