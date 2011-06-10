@@ -22,6 +22,8 @@ sig
   val subgraph: (key -> bool) -> 'a T -> 'a T
   val get_entry: 'a T -> key -> 'a * (key list * key list)            (*exception UNDEF*)
   val map: (key -> 'a -> 'b) -> 'a T -> 'b T
+  val filter_nodes: (key * ('a * (key list * key list)) -> bool) -> 'a T -> key list
+  val filter: (key * ('a * (key list * key list)) -> bool) -> 'a T -> 'a T
   val get_node: 'a T -> key -> 'a                                     (*exception UNDEF*)
   val map_node: key -> ('a -> 'a) -> 'a T -> 'a T
   val map_node_yield: key -> ('a -> 'b * 'a) -> 'a T -> 'b * 'a T
@@ -37,6 +39,7 @@ sig
   val is_edge: 'a T -> key * key -> bool
   val add_edge: key * key -> 'a T -> 'a T
   val del_edge: key * key -> 'a T -> 'a T
+  val reverse_edge: key * key -> 'a T -> 'a T
   val merge: ('a * 'a -> bool) -> 'a T * 'a T -> 'a T                 (*exception DUP*)
   val join: (key -> 'a * 'a -> 'a) (*exception DUP/SAME*) ->
     'a T * 'a T -> 'a T                                               (*exception DUP*)
@@ -99,6 +102,31 @@ fun subgraph P G =
     fun subg (k, (i, (preds, succs))) =
       if P k then Table.update (k, (i, (filter P preds, filter P succs))) else I;
   in Graph (fold_graph subg G Table.empty) end;
+
+(* Get list of node ids that satisfy a given predicate. *)
+fun filter_nodes P G = 
+    let fun graph_predicate (node as (k, (i, (preds, succs)))) accum = 
+            if P node then k :: accum             
+            else accum
+    in
+        fold_graph graph_predicate G []
+    end;
+
+(* Get subgraph of all nodes that satisfy a given predicate.
+   This implementation is pretty naive, two-pass. *)
+fun filter_graph P G = 
+    let val good_nodes = filter_nodes P G
+        fun is_good_node n =
+            List.exists 
+                (fn k =>
+                    case k of
+                        x => true
+                      | _ => false)
+                good_nodes
+    in
+        subgraph is_good_node G
+    end;
+
 
 fun get_entry (Graph tab) x =
   (case Table.lookup tab x of
@@ -191,6 +219,20 @@ fun del_edge (x, y) G =
     G |> map_entry y (fn (i, (preds, succs)) => (i, (remove_key x preds, succs)))
       |> map_entry x (fn (i, (preds, succs)) => (i, (preds, remove_key y succs)))
   else G;
+
+fun reverse_edge (x, y) G =
+    if is_edge G (x, y) then
+        G |> map_entry y (fn (i, (preds, succs)) => (i, (remove_key x preds, x :: succs)))
+          |> map_entry x (fn (i, (preds, succs)) => (i, (y :: preds, remove_key y succs)))
+    else G;
+
+fun reverse_edges_node G node = 
+    let val succs = imm_succs G node
+        val preds = imm_preds G node
+    in
+
+    end
+
 
 fun diff_edges G1 G2 =
   flat (dest G1 |> map (fn (x, ys) => ys |> map_filter (fn y =>
@@ -288,6 +330,7 @@ fun merge_trans_acyclic eq (G1, G2) =
 (*final declarations of this structure!*)
 val map = map_nodes;
 val fold = fold_graph;
+val filter = filter_graph;
 
 end;
 

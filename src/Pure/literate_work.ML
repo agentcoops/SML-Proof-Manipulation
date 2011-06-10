@@ -139,7 +139,7 @@ fun negated_node (ProofNode node) =
 
 (*Wait! can't we just use a node in the graph? 
 This seems right. Keep track of finished/todo nodes elsewhere, then traverse 
-graph from the bottom, updating accordingly. *)
+graph from the bottom, updating accordingly. 
 
 type proof_node = {
      formula: string uniform_formula,
@@ -150,35 +150,25 @@ type proof_node = {
 
 (* Graph needs to indicate beginning and end of proof for ease of manipulation. *)
 datatype proof_graph = ProofGraph of string * string * proof_node T
+*)
+
 
 (* So, now we have a form of the proof which contains this necessary
 pre-processing step.  the information exists in two ways: 1) analyzing
 the structure of the proof, 2) in the tstp format.  seems like we
 might not always be able to assume that we have the fact that x is
 negated conjecture so a mapping between a "raw" proof structure and
-one with metadata seems useful. *)
+one with metadata seems useful. 
+
+TODO: for now, I'm just trusting the TSTP role information, but really
+I should flesh out this preprocessing stage such that
+negated_conjecture is deduced for greater generality.
 
 fun preprocessed_proof proof = 
+*)
 
-
-(* a way to turn sequents around using contraposition: negs to other
-side. *)
 
 (*
-
-One thing to note in the TSTP: we get the metadata that this is a
-conjecture or a negated_conjecture.  This is lost, though, in the tstp
-parser. It could be easy to infer this, but this might be a necessary
-modification to the parser itself (a better, more information
-preserving internal representation). 
-
-Ask Jasmin?
-
-Across proofs, the "role" function seems to be:
-axiom, plain, conjecture, negated_conjecture
-
-Are there more options here?
-
 Also, remember: disjunction -> or, must factor out the common
 sub-componants!
 *)
@@ -186,21 +176,25 @@ sub-componants!
 (* Ok, one attempt at locating the subgraph that is negated_conjecture. *)
 
 fun conjectures graph = 
-    let fun is_conjecture (_, (_, (preds, _))) = 
-            if preds = [] then true else false
+    let fun is_conjecture (ProofNode node) =
+            case #kind node of
+                Conjecture => true
+              | _ => false
     in
         Graph.filter_nodes is_conjecture graph
     end;
 
-fun negated_conjectures graph =
-    
-
-fun node_contraposition graph node = 
-    let new_formula = unnegated_formula node
-        negated_formula
+fun node_contraposition graph node_id = 
+    let val (ProofNode node) = Graph.get_node graph node_is
+        val negated_formula = #formula node |> negated_formula
+        val new_kind = 
+            case #kind node of
+                NegatedConjecture => Plain
+              | other => other
     in
         
-    end
+
+    end;
     
 
 (* Now we can make a first pass at the algorithm... *)
