@@ -116,37 +116,30 @@ seen as a disjunctive sequent."
 Needed:
 *)
 
-(* a way to determine if any given clause is negated and to remove
-negation. this is all actually worthless it seems... *) 
 
-fun formula_from_inference (Inference(_, formula, _)) = formula
+(* helper functions to affect the negativity of a node. *)
+fun formula_from_node (ProofNode node) = #formula node
 
 fun formula_is_negated (AConn(ANot, _)) = true
   | formula_is_negated _ = false
 
-fun inference_is_negated inference = 
-    formula_is_negated (formula_from_inference inference)
-
-fun node_is_negated graph node = 
-    inference_is_negated (Graph.get_node graph node)
+fun node_is_negated (ProofNode node) = 
+    #formula node |> formula_is_negated
 
 fun unnegated_formula (AConn(ANot, rest)) = hd rest
   | unnegated_formula otherwise = otherwise
 
-fun unnegated_inference (Inference(id, formula, rest)) = 
-    Inference(id, unnegated_formula formula, rest)
-            
+fun unnegated_node (ProofNode node) = 
+    ProofNode {formula = #formula node |> unnegated_formula, kind = #kind node} 
 
-(* a sequent structure: identifier,  *)
-type a' sequent = Sequent of string * bool * 'a list * 'a list;
+fun negated_formula formula = AConn(ANot, [formula])
+
+fun negated_node (ProofNode node) =
+    ProofNode {formula = #formula node |> negated_formula, kind = #kind node} 
 
 (*Wait! can't we just use a node in the graph? 
 This seems right. Keep track of finished/todo nodes elsewhere, then traverse 
 graph from the bottom, updating accordingly. *)
-
-(* Also, I think we want to complicate the type of a node... *)
-
-datatype proof_role = Axiom | Conjecture | NegatedConjecture | Plain;
 
 type proof_node = {
      formula: string uniform_formula,
