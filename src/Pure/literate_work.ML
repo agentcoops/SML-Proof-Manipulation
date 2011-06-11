@@ -23,9 +23,6 @@ val an_element = nth test_proof 0;
 (* Table sample code... *)
 val table1 = Symtab.make [("foo", "bar"), ("baz", "bin")];
 
-(* Graph sample code... *)
-val graph1: (string, string, string fo_term) formula T = Graph.empty;
-
 (* 
 datatype 'a T = Graph of ('a * (key list * key list)) Table.table;
 So, a key maps to (content, (preds, succes))
@@ -60,8 +57,6 @@ fun add_proof_step_to_graph (inference as Inference inf, graph) =
     in
         List.foldl add_justification_edge graph_with_node dependencies
     end;
-
-val graph_with_step = add_proof_step_to_graph (an_element, graph1);
 
 (*
 So, we get a problem file which specifies a description of the theory in 
@@ -176,7 +171,7 @@ sub-componants!
 (* Ok, one attempt at locating the subgraph that is negated_conjecture. *)
 
 fun conjectures graph = 
-    let fun is_conjecture (ProofNode node) =
+    let fun is_conjecture (_, (ProofNode node, _)) =
             case #kind node of
                 Conjecture => true
               | _ => false
@@ -184,20 +179,45 @@ fun conjectures graph =
         Graph.filter_nodes is_conjecture graph
     end;
 
+fun negated_conjectures_in_list graph nodes =
+    let fun is_negated_conjecture key =
+            let val (ProofNode node) = Graph.get_node graph key
+            in
+                case #kind node of
+                    NegatedConjecture => true
+                  | _ => false
+            end
+    in
+        List.filter is_negated_conjecture nodes
+    end;
+
+(* Ugh, this works, but it looks quite ugly. CLEAN! *)
 fun node_contraposition graph node_id = 
-    let val (ProofNode node) = Graph.get_node graph node_is
+    let fun constant_list_of_same_size value lst = 
+            List.tabulate (length lst, fn x => value) 
+            
+        val (ProofNode node) = Graph.get_node graph node_id
         val negated_formula = #formula node |> negated_formula
-       (* I think this is right... perhaps I want to separate out 
-          changing of kind from actual contraposition? *)
         val new_kind = 
             case #kind node of
                 NegatedConjecture => Plain 
               | other => other
         val new_node = ProofNode {formula = negated_formula, kind = new_kind}
+        val succ_reversals = 
+            (Graph.imm_succs graph node_id) 
+                |> negated_conjectures_in_list graph 
+                |> (fn succs => 
+                      ListPair.zip (constant_list_of_same_size node_id succs, 
+                                    succs))
+        val pred_reversals = 
+            (Graph.imm_preds graph node_id) 
+                |> negated_conjectures_in_list graph 
+                |> (fn preds => 
+                      ListPair.zip (preds,
+                                    constant_list_of_same_size node_id preds))
     in
         graph |> Graph.map_node node_id (fn x => new_node) 
-              (* ack, this actually has to just be the nodes that are negated_conjecture... *)
-              |> Graph.reverse_edges_node node_id 
+              |> Graph.reverse_edges (succ_reversals @ pred_reversals) 
     end;
     
 

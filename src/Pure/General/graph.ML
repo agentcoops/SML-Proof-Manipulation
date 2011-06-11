@@ -225,8 +225,10 @@ fun del_edge (x, y) G =
 (* Reverse edges! Some of these implementations could be made more robust... *)
 fun reverse_edge (x, y) G =
     if is_edge G (x, y) then
+        (writeln (PolyML.makestring x ^ " " ^ (PolyML.makestring y));
         G |> map_entry y (fn (i, (preds, succs)) => (i, (remove_key x preds, x :: succs)))
           |> map_entry x (fn (i, (preds, succs)) => (i, (y :: preds, remove_key y succs)))
+        )
     else G;
 
 fun reverse_edges [] G = G
@@ -238,7 +240,7 @@ fun reverse_edges_node node G =
         fun constant_list_of_same_size value lst = 
             List.tabulate (length lst, fn x => value) 
     in
-        G |> reverse_edges (ListPair.zip (succs, constant_list_of_same_size node succs))
+        G |> reverse_edges (ListPair.zip (constant_list_of_same_size node succs, succs))
           |> reverse_edges (ListPair.zip (preds, constant_list_of_same_size node preds))
     end;
 
