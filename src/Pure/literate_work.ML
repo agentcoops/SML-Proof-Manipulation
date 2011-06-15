@@ -46,6 +46,28 @@ datatype proof_node = ProofNode of {
          (*, justification? *)
 }
 
+
+(* Graph needs to indicate beginning and end of proof for ease of manipulation. *)
+datatype proof_graph = ProofGraph of string * string * proof_node T
+
+(* So, now we have a form of the proof which contains this necessary
+pre-processing step.  the information exists in two ways: 1) analyzing
+the structure of the proof, 2) in the tstp format.  seems like we
+might not always be able to assume that we have the fact that x is
+negated conjecture so a mapping between a "raw" proof structure and
+one with metadata seems useful. 
+
+TODO: for now, I'm just trusting the TSTP role information, but really
+I should flesh out this preprocessing stage such that
+negated_conjecture is deduced for greater generality.
+
+fun preprocessed_proof proof = 
+*)
+
+
+(* ProofGraph is: start node, end node, graph. *)
+datatype proof_graph = ProofGraph of string * string * proof_node T
+
 (* Do we need to preserve the string names or just keep the numerical identifiers? *)
 fun add_proof_step_to_graph (inference as Inference inf, graph) =
     let val name = #1 (#name inf)
@@ -80,36 +102,6 @@ fun graph_from_tstp_file file =
 
 val proof_graph = proof_to_graph test_proof;
 
-(* 
-
-Naive proof graph in hand, we need to define the necessary operations
-there upon to convert proof by negation to direct proof.
-
-"The algorithm relies on the proof by contradiction expressed as a set
-of sequents, which are turned around using the contrapositive so that
-the formulas are unnegated (as we did in all the examples). It
-maintains a set of proved nodes (initially the empty set) and a set of
-target nodes that it may proceed to prove (initially the set of all
-unnegated nodes). The constructed proof is expressed using the
-shorthand notation.
-
-1. Derive as many sequents as possible with their conclusion in the
-target set based on the proved nodes. Each time a sequent is appended
-to the proof, its conclusion is added to the set of proved nodes.
-
-2. If all the nodes in the target set are proved, we are
-done. Otherwise, the last sequent must be a disjunctive expression
-with at least 2 clauses. Perform an n-way case split:
-
-3. For each of the branches, invoke the procedure recursively, with
-the assumption added to the proved set and with all the nodes that
-dominate the branch and no other branch as the target set.
-
-4. After the case split, go back to step 1. The case split itself is
-seen as a disjunctive sequent."
-
-Needed:
-*)
 
 
 (* helper functions to affect the negativity of a node. *)
@@ -132,43 +124,43 @@ fun negated_formula formula = AConn(ANot, [formula])
 fun negated_node (ProofNode node) =
     ProofNode {formula = #formula node |> negated_formula, kind = #kind node} 
 
-(*Wait! can't we just use a node in the graph? 
-This seems right. Keep track of finished/todo nodes elsewhere, then traverse 
-graph from the bottom, updating accordingly. 
+(* 
+"The algorithm relies on the proof by contradiction expressed as a set
+of sequents, which are turned around using the contrapositive so that
+the formulas are unnegated (as we did in all the examples). It
+maintains a set of proved nodes (initially the empty set) and a set of
+target nodes that it may proceed to prove (initially the set of all
+unnegated nodes). The constructed proof is expressed using the
+shorthand notation.
 
-type proof_node = {
-     formula: string uniform_formula,
-     role: proof_role,
-     inference: string,
-     dependents: int list
-}
+1. Derive as many sequents as possible with their conclusion in the
+target set based on the proved nodes. Each time a sequent is appended
+to the proof, its conclusion is added to the set of proved nodes.
 
-(* Graph needs to indicate beginning and end of proof for ease of manipulation. *)
-datatype proof_graph = ProofGraph of string * string * proof_node T
+2. If all the nodes in the target set are proved, we are
+done. Otherwise, the last sequent must be a disjunctive expression
+with at least 2 clauses. Perform an n-way case split:
+
+3. For each of the branches, invoke the procedure recursively, with
+the assumption added to the proved set and with all the nodes that
+dominate the branch and no other branch as the target set.
+
+4. After the case split, go back to step 1. The case split itself is
+seen as a disjunctive sequent."
 *)
-
-
-(* So, now we have a form of the proof which contains this necessary
-pre-processing step.  the information exists in two ways: 1) analyzing
-the structure of the proof, 2) in the tstp format.  seems like we
-might not always be able to assume that we have the fact that x is
-negated conjecture so a mapping between a "raw" proof structure and
-one with metadata seems useful. 
-
-TODO: for now, I'm just trusting the TSTP role information, but really
-I should flesh out this preprocessing stage such that
-negated_conjecture is deduced for greater generality.
-
-fun preprocessed_proof proof = 
-*)
-
 
 (*
-Also, remember: disjunction -> or, must factor out the common
-sub-componants!
+
+Start from terminating node. 
+Get set of proving nodes.
+Add each to 
+
+
+OK! So, with this we can merge two subgraphs...
+merge (fn (x,y) => x=y) (graph, graph2);
 *)
 
-(* Ok, one attempt at locating the subgraph that is negated_conjecture. *)
+
 
 fun conjectures graph = 
     let fun is_conjecture (_, (ProofNode node, _)) =
@@ -213,12 +205,20 @@ fun node_contraposition graph node_id =
             (Graph.imm_preds graph node_id) 
                 |> negated_conjectures_in_list graph 
                 |> (fn preds => 
-                      ListPair.zip (preds,
-                                    constant_list_of_same_size node_id preds))
+                       ListPair.zip (preds,
+                                     constant_list_of_same_size node_id preds))
     in
         graph |> Graph.map_node node_id (fn x => new_node) 
               |> Graph.reverse_edges (succ_reversals @ pred_reversals) 
     end;
+
+(* also, the preceding method seems not to be exactly what is needed
+here... Really just need to return subgraph centered on node... *)
+fun sequent_contraposition graph node_id = 
+    let val (ProofNode node) = Graph.get_node graph node_id
+        val negated_formula = #formula node |> negated_formula
+        val new_kind = 
+                              
     
 
 (* Now we can make a first pass at the algorithm... *)

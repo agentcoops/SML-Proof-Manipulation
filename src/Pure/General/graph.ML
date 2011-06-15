@@ -13,7 +13,7 @@ sig
   exception UNDEF of key
   val empty: 'a T
   val is_empty: 'a T -> bool
-  val keys: 'a T -> key list
+  val keys: 'a T -> key lis
   val dest: 'a T -> (key * key list) list
   val get_first: (key * ('a * (key list * key list)) -> 'b option) -> 'a T -> 'b option
   val fold: (key * ('a * (key list * key list)) -> 'b -> 'b) -> 'a T -> 'b -> 'b
