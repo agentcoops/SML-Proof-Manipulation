@@ -171,12 +171,13 @@ fun conjectures graph =
         Graph.filter_nodes is_conjecture graph
     end;
 
-fun negated_conjectures_in_list graph nodes =
+fun conjectures_in_list graph nodes =
     let fun is_negated_conjecture key =
             let val (ProofNode node) = Graph.get_node graph key
             in
                 case #kind node of
                     NegatedConjecture => true
+                  | Conjecture => true
                   | _ => false
             end
     in
@@ -188,20 +189,14 @@ fun proof_contraposition graph =
     let fun node_contraposition (node_id, graph) = 
             let fun constant_list_of_same_size value lst = 
                     List.tabulate (length lst, fn _ => value) 
-                val succ_reversals = 
-                    (Graph.imm_succs graph node_id) 
-                        |> negated_conjectures_in_list graph 
-                        |> (fn succs => 
-                               ListPair.zip (constant_list_of_same_size node_id succs, 
-                                             succs))
                 val pred_reversals = 
                     (Graph.imm_preds graph node_id) 
-                        |> negated_conjectures_in_list graph 
+                        |> conjectures_in_list graph 
                         |> (fn preds => 
                                ListPair.zip (preds,
                                              constant_list_of_same_size node_id preds))
             in
-                graph |> Graph.reverse_edges (succ_reversals @ pred_reversals) 
+                graph |> Graph.reverse_edges (*(succ_reversals @*) pred_reversals
             end
         fun new_node (node_id, graph) =
             let val (ProofNode node) = Graph.get_node graph node_id

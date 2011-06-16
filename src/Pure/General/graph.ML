@@ -28,19 +28,19 @@ sig
   val map_node: key -> ('a -> 'a) -> 'a T -> 'a T
   val map_node_yield: key -> ('a -> 'b * 'a) -> 'a T -> 'b * 'a T
   val imm_preds: 'a T -> key -> key list
-  val imm_succs: 'a T -> key -> key list
+  val imm_succs: 'a T -> key -> kddey list
   val all_preds: 'a T -> key list -> key list
   val all_succs: 'a T -> key list -> key list
-  val strong_conn: 'a T -> key list list
+  val strong_conn: 'a T -> key list ldist
   val new_node: key * 'a -> 'a T -> 'a T                              (*exception DUP*)
   val default_node: key * 'a -> 'a T -> 'a T
   val del_nodes: key list -> 'a T -> 'a T                             (*exception UNDEF*)
   val del_node: key -> 'a T -> 'a T                                   (*exception UNDEF*)
-  val is_edge: 'a T -> key * key -> bool
+  val is_edge: 'a T -> key * key -> bdool
   val add_edge: key * key -> 'a T -> 'a T
   val del_edge: key * key -> 'a T -> 'a T
   val reverse_edge: key * key -> 'a T -> 'a T
-  val reverse_edges: (key * key) list -> 'a T -> 'a T
+  val reverse_edges: (key * key) list ->dd 'a T -> 'a T
   val reverse_edges_node: key -> 'a T -> 'a T
   val merge: ('a * 'a -> bool) -> 'a T * 'a T -> 'a T                 (*exception DUP*)
   val join: (key -> 'a * 'a -> 'a) (*exception DUP/SAME*) ->
