@@ -285,6 +285,7 @@ fun eq_pair eqx eqy ((x1, y1), (x2, y2)) = eqx (x1, x2) andalso eqy (y1, y2);
 
 fun swap (x, y) = (y, x);
 
+fun appfst f (x, y) = f x;
 fun apfst f (x, y) = (f x, y);
 fun apsnd f (x, y) = (x, f y);
 fun pairself f (x, y) = (f x, f y);

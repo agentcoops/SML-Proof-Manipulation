@@ -24,23 +24,24 @@ sig
   val map: (key -> 'a -> 'b) -> 'a T -> 'b T
   val filter_nodes: (key * ('a * (key list * key list)) -> bool) -> 'a T -> key list
   val filter: (key * ('a * (key list * key list)) -> bool) -> 'a T -> 'a T
+  val app: (key -> 'a -> unit) -> 'a T -> unit
   val get_node: 'a T -> key -> 'a                                     (*exception UNDEF*)
   val map_node: key -> ('a -> 'a) -> 'a T -> 'a T
   val map_node_yield: key -> ('a -> 'b * 'a) -> 'a T -> 'b * 'a T
   val imm_preds: 'a T -> key -> key list
-  val imm_succs: 'a T -> key -> kddey list
+  val imm_succs: 'a T -> key -> key list
   val all_preds: 'a T -> key list -> key list
   val all_succs: 'a T -> key list -> key list
-  val strong_conn: 'a T -> key list ldist
+  val strong_conn: 'a T -> key list list
   val new_node: key * 'a -> 'a T -> 'a T                              (*exception DUP*)
   val default_node: key * 'a -> 'a T -> 'a T
   val del_nodes: key list -> 'a T -> 'a T                             (*exception UNDEF*)
   val del_node: key -> 'a T -> 'a T                                   (*exception UNDEF*)
-  val is_edge: 'a T -> key * key -> bdool
+  val is_edge: 'a T -> key * key -> bool
   val add_edge: key * key -> 'a T -> 'a T
   val del_edge: key * key -> 'a T -> 'a T
   val reverse_edge: key * key -> 'a T -> 'a T
-  val reverse_edges: (key * key) list ->dd 'a T -> 'a T
+  val reverse_edges: (key * key) list -> 'a T -> 'a T
   val reverse_edges_node: key -> 'a T -> 'a T
   val merge: ('a * 'a -> bool) -> 'a T * 'a T -> 'a T                 (*exception DUP*)
   val join: (key -> 'a * 'a -> 'a) (*exception DUP/SAME*) ->
@@ -128,8 +129,7 @@ fun filter_graph P G =
     in
         subgraph is_good_node G
     end;
-
-
+  
 fun get_entry (Graph tab) x =
   (case Table.lookup tab x of
     SOME entry => entry
@@ -143,6 +143,10 @@ fun map_entry_yield x f (G as Graph tab) =
 
 
 (* nodes *)
+
+fun appfst f (x, y) = f x;
+
+fun app_nodes f (Graph tab) = Table.app (appfst o f) tab;
 
 fun map_nodes f (Graph tab) = Graph (Table.map (apfst o f) tab);
 
@@ -338,6 +342,7 @@ fun merge_trans_acyclic eq (G1, G2) =
 
 
 (*final declarations of this structure!*)
+val app = app_nodes;
 val map = map_nodes;
 val fold = fold_graph;
 val filter = filter_graph;

@@ -20,6 +20,7 @@ sig
   exception UNDEF of key
   val empty: 'a table
   val is_empty: 'a table -> bool
+  val app: (key -> 'a -> unit) -> 'a table -> unit
   val map: (key -> 'a -> 'b) -> 'a table -> 'b table
   val fold: (key * 'b -> 'a -> 'a) -> 'b table -> 'a -> 'a
   val fold_rev: (key * 'b -> 'a -> 'a) -> 'b table -> 'a -> 'a
@@ -81,6 +82,22 @@ fun is_empty Empty = true
 
 
 (* map and fold combinators *)
+
+fun app_table f = 
+    let fun app Empty = ()
+          | app (Branch2 (left, (k, x), right)) = 
+            (app left;
+             f k x;
+             app right;
+             ())
+          | app (Branch3 (left, (k1, x1), mid, (k2, x2), right)) =
+            (app left;
+             f k1 x1;
+             app mid;
+             f k2 x2;
+             app right;
+             ())
+    in app end;
 
 fun map_table f =
   let
@@ -402,6 +419,7 @@ val _ =
 
 
 (*final declarations of this structure!*)
+val app = app_table;
 val map = map_table;
 val fold = fold_table;
 val fold_rev = fold_rev_table;

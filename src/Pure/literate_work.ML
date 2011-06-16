@@ -222,3 +222,13 @@ fun node_info graph id =
         val succs = Graph.imm_succs graph id
         val preds = Graph.imm_preds graph id
     in (node, preds, succs) end;
+
+(* Ok, really need to do some graphviz work here...  I want this to be
+a generic method (ie accepts function for different node types) but
+specialization for proof nodes... *)
+fun graph_to_graphviz f graph file_name =
+    let graph_output = TextIO.openOut file_name
+    in
+        
+
+    end
