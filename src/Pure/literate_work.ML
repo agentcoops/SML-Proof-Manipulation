@@ -223,12 +223,33 @@ fun node_info graph id =
         val preds = Graph.imm_preds graph id
     in (node, preds, succs) end;
 
-(* Ok, really need to do some graphviz work here...  I want this to be
-a generic method (ie accepts function for different node types) but
-specialization for proof nodes... *)
-fun graph_to_graphviz f graph file_name =
-    let graph_output = TextIO.openOut file_name
-    in
-        
 
+fun graph_to_graphviz f graph file_name =
+    let val graph_output = TextIO.openOut file_name
+        fun output line = TextIO.output (graph_output, line)
+        fun output_connection node1 node2 =
+            output ("\t\"" ^ f node1 ^ "\" -> \"" ^ f node2 ^ "\";\n")
+        fun plot_connections key = 
+            List.app (fn node2 => output_connection key node2) 
+                     (Graph.imm_succs graph key)
+    in 
+        (output "digraph ml_graph {\n";
+         List.app plot_connections (Graph.keys graph);
+         output "}\n";
+         TextIO.closeOut graph_output)
     end
+    
+fun proof_graph_to_graphviz graph file_name =
+    let fun handle_node key = 
+            let val (ProofNode node) = Graph.get_node graph key
+            in
+                case #kind node of
+                    NegatedConjecture => "~" ^ key
+                  | _ => key
+            end 
+    in 
+        graph_to_graphviz handle_node graph file_name
+    end
+
+
+graph_to_graphviz
