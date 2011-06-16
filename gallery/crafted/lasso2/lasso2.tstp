@@ -1,0 +1,8 @@
+fof(n0, negated_conjecture, ~0, file('foo', conj)).
+fof(n1, negated_conjecture, ~1, inference(unknown, [], [n0])).
+fof(n2, negated_conjecture, ~2, inference(unknown, [], [n1])).
+fof(n3, negated_conjecture, ~3, inference(unknown, [], [n2])).
+fof(n4, negated_conjecture, ~4, inference(unknown, [], [n2])).
+fof(n5, negated_conjecture, ~5, inference(unknown, [], [n3])).
+fof(n6, negated_conjecture, ~6, inference(unknown, [], [n4])).
+fof(bot, negated_conjecture, $false, inference(unknown, [], [n5, n6])).

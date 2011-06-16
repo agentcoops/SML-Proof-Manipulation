@@ -1,0 +1,12 @@
+have 6
+hence 5
+hence 3 | 4
+[[
+  assume 3
+  hence 1
+  hence 0
+||
+  assume 4
+  hence 2
+  hence 0
+]]
