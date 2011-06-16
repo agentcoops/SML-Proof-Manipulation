@@ -183,42 +183,81 @@ fun negated_conjectures_in_list graph nodes =
         List.filter is_negated_conjecture nodes
     end;
 
-(* Ugh, this works, but it looks quite ugly. CLEAN! *)
-fun node_contraposition graph node_id = 
-    let fun constant_list_of_same_size value lst = 
-            List.tabulate (length lst, fn x => value) 
-            
-        val (ProofNode node) = Graph.get_node graph node_id
-        val negated_formula = #formula node |> negated_formula
-        val new_kind = 
-            case #kind node of
-                NegatedConjecture => Plain 
-              | other => other
-        val new_node = ProofNode {formula = negated_formula, kind = new_kind}
-        val succ_reversals = 
-            (Graph.imm_succs graph node_id) 
-                |> negated_conjectures_in_list graph 
-                |> (fn succs => 
-                      ListPair.zip (constant_list_of_same_size node_id succs, 
-                                    succs))
-        val pred_reversals = 
-            (Graph.imm_preds graph node_id) 
-                |> negated_conjectures_in_list graph 
-                |> (fn preds => 
-                       ListPair.zip (preds,
-                                     constant_list_of_same_size node_id preds))
+(* So this now does nothing to the node itself, rather just swapping the appropriate edges. *)
+fun proof_contraposition graph =
+    let fun node_contraposition (node_id, graph) = 
+            let fun constant_list_of_same_size value lst = 
+                    List.tabulate (length lst, fn _ => value) 
+                val succ_reversals = 
+                    (Graph.imm_succs graph node_id) 
+                        |> negated_conjectures_in_list graph 
+                        |> (fn succs => 
+                               ListPair.zip (constant_list_of_same_size node_id succs, 
+                                             succs))
+                val pred_reversals = 
+                    (Graph.imm_preds graph node_id) 
+                        |> negated_conjectures_in_list graph 
+                        |> (fn preds => 
+                               ListPair.zip (preds,
+                                             constant_list_of_same_size node_id preds))
+            in
+                graph |> Graph.reverse_edges (succ_reversals @ pred_reversals) 
+            end
+        fun new_node (node_id, graph) =
+            let val (ProofNode node) = Graph.get_node graph node_id
+                val negated_formula = #formula node |> negated_formula              
+            in       
+                case #kind node of
+                    NegatedConjecture =>  
+                    Graph.map_node node_id 
+                                   (fn _ =>
+                                       ProofNode {formula = negated_formula, 
+                                                  kind = Plain})
+                                   graph
+                  | _ => graph
+            end
+        val keys = Graph.keys graph
     in
-        graph |> Graph.map_node node_id (fn x => new_node) 
-              |> Graph.reverse_edges (succ_reversals @ pred_reversals) 
-    end;
+        List.foldl node_contraposition graph keys
+                   |> (fn g1 => List.foldl new_node g1 keys)
+    end
+
+fun node_info graph id = 
+    let val node = Graph.get_node graph id
+        val succs = Graph.imm_succs graph id
+        val preds = Graph.imm_preds graph id
+    in (node, preds, succs) end;
+
+
+fun proof_contraposition graph =
+    
+
+
+
+
+
+fun new_node (ProofNode node) =
+    case #kind node of
+        NegatedConjecture => 
+        ProofNode
+            {formula = #formula node |> negated_formula, 
+             kind = Plain}
+      | other => ProofNode node
 
 (* also, the preceding method seems not to be exactly what is needed
 here... Really just need to return subgraph centered on node... *)
 fun sequent_contraposition graph node_id = 
     let val (ProofNode node) = Graph.get_node graph node_id
         val negated_formula = #formula node |> negated_formula
-        val new_kind = 
-                              
+        val new_kind =        
+            case #kind node of
+                NegatedConjecture => Plain 
+              | other => other
+        val new_graph = 
+        val new_edges = 
+    in
+        
+    end
     
 
 (* Now we can make a first pass at the algorithm... *)
