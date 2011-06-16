@@ -250,6 +250,3 @@ fun proof_graph_to_graphviz graph file_name =
     in 
         graph_to_graphviz handle_node graph file_name
     end
-
-
-graph_to_graphviz
