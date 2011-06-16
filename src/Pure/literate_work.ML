@@ -196,7 +196,7 @@ fun proof_contraposition graph =
                                ListPair.zip (preds,
                                              constant_list_of_same_size node_id preds))
             in
-                graph |> Graph.reverse_edges (*(succ_reversals @*) pred_reversals
+                graph |> Graph.reverse_edges pred_reversals
             end
         fun new_node (node_id, graph) =
             let val (ProofNode node) = Graph.get_node graph node_id
@@ -222,43 +222,3 @@ fun node_info graph id =
         val succs = Graph.imm_succs graph id
         val preds = Graph.imm_preds graph id
     in (node, preds, succs) end;
-
-
-fun proof_contraposition graph =
-    
-
-
-
-
-
-fun new_node (ProofNode node) =
-    case #kind node of
-        NegatedConjecture => 
-        ProofNode
-            {formula = #formula node |> negated_formula, 
-             kind = Plain}
-      | other => ProofNode node
-
-(* also, the preceding method seems not to be exactly what is needed
-here... Really just need to return subgraph centered on node... *)
-fun sequent_contraposition graph node_id = 
-    let val (ProofNode node) = Graph.get_node graph node_id
-        val negated_formula = #formula node |> negated_formula
-        val new_kind =        
-            case #kind node of
-                NegatedConjecture => Plain 
-              | other => other
-        val new_graph = 
-        val new_edges = 
-    in
-        
-    end
-    
-
-(* Now we can make a first pass at the algorithm... *)
-fun negation_to_direct proof =
-    let val unnegated_nodes = []
-        fun negation_to_direct' proved target =
-    in
-        negation_to_direct' [] unnegated_nodes
-    end;
