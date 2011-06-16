@@ -1,0 +1,4 @@
+These examples were crafted by hand so as to exercise various aspects of the
+proof redirection code. The easiest example is "linear", then come "lasso1" and
+"lasso2", and finally "diabolo". They correspond to the examples described in
+Section 3 of "Redirecting Resolution Proofs".
