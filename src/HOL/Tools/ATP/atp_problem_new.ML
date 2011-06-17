@@ -74,6 +74,7 @@ sig
   val formula_map : ('c -> 'd) -> ('a, 'b, 'c) formula -> ('a, 'b, 'd) formula
   val is_format_typed : format -> bool
   val tptp_strings_for_atp_problem : format -> string problem -> string list
+  val string_for_untyped_formula : format -> (string, 'a, string fo_term) formula -> string
   val ensure_cnf_problem :
     (string * string) problem -> (string * string) problem
   val filter_cnf_ueq_problem :
@@ -282,6 +283,35 @@ fun string_for_formula format (AQuant (q, xs, phi)) =
                   (map (string_for_formula format) phis)
     |> enclose "(" ")"
   | string_for_formula format (AAtom tm) = string_for_term format tm
+
+
+(* Ran into a problem with string_for_formula requiring (string,
+string ho_type, string fo_term) formula when parsing tstp does not
+return a type of this kind. Likely, there is a much more elegant
+solution than simply removing the type requirement, but any such
+solution is not immediately apparent to me. *) 
+fun string_for_bound_var_stripped format (s, ty) = s ^ ""
+
+fun string_for_untyped_formula format (AQuant (q, xs, phi)) =
+    string_for_quantifier q ^
+    "[" ^ commas (map (string_for_bound_var_stripped format) xs) ^ "] : " ^
+    string_for_untyped_formula format phi
+    |> enclose "(" ")"
+  | string_for_untyped_formula format
+        (AConn (ANot, [AAtom (ATerm ("=" (* tptp_equal *), ts))])) =
+    space_implode (" " ^ tptp_not_infix ^ tptp_equal ^ " ")
+                  (map (string_for_term format) ts)
+    |> format = THF ? enclose "(" ")"
+  | string_for_untyped_formula format (AConn (c, [phi])) =
+    string_for_connective c ^ " " ^
+    (string_for_untyped_formula format phi |> format = THF ? enclose "(" ")")
+    |> enclose "(" ")"
+  | string_for_untyped_formula format (AConn (c, phis)) =
+    space_implode (" " ^ string_for_connective c ^ " ")
+                  (map (string_for_untyped_formula format) phis)
+    |> enclose "(" ")"
+  | string_for_untyped_formula format (AAtom tm) = string_for_term format tm
+
 
 val default_source =
   ATerm ("inference", ATerm ("isabelle", []) :: replicate 2 (ATerm ("[]", [])))

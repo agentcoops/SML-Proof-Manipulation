@@ -239,13 +239,17 @@ fun graph_to_graphviz f graph file_name =
          TextIO.closeOut graph_output)
     end
     
-fun proof_graph_to_graphviz graph file_name =
+fun proof_graph_to_graphviz graph file_name use_formula_label =
     let fun handle_node key = 
             let val (ProofNode node) = Graph.get_node graph key
+                val formula_string = 
+                    if use_formula_label then
+                        ": " ^ string_for_untyped_formula FOF (#formula node)
+                    else ""
             in
                 case #kind node of
-                    NegatedConjecture => "~" ^ key
-                  | _ => key
+                    NegatedConjecture => "~" ^ key ^ formula_string
+                  | _ => key ^ formula_string
             end 
     in 
         graph_to_graphviz handle_node graph file_name
