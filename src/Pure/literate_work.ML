@@ -254,3 +254,11 @@ fun proof_graph_to_graphviz graph file_name use_formula_label =
     in 
         graph_to_graphviz handle_node graph file_name
     end
+
+fun direct_and_original_graphviz_for_tstp_file file_name use_formula_label =
+    let val proof = graph_from_tstp_file file_name
+        val contra = proof_contraposition proof
+    in
+        (proof_graph_to_graphviz contra (file_name ^ "-direct.gv") use_formula_label;
+         proof_graph_to_graphviz proof (file_name ^ "-negation.gv") use_formula_label)
+    end
