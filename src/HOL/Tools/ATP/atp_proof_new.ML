@@ -292,7 +292,7 @@ fun list_app (f, args) =
 
 (* We ignore TFF and THF types for now. *)
 fun parse_type_stuff x =
-  Scan.repeat (($$ tptp_has_type || $$ tptp_fun_type) |-- parse_arg) x
+    Scan.repeat (($$ tptp_has_type || $$ tptp_fun_type) |-- parse_arg) x
 and parse_arg x =
   ($$ "(" |-- parse_term --| $$ ")" --| parse_type_stuff
    || scan_general_id --| parse_type_stuff
@@ -345,7 +345,7 @@ and parse_quantified_formula x =
    --| $$ "[" -- parse_terms --| $$ "]" --| $$ ":" -- parse_literal
    >> (fn ((q, ts), phi) =>
           (* We ignore TFF and THF types for now. *)
-          AQuant (q, map (rpair NONE o fo_term_head) ts, phi))) x
+           AQuant (q, map (rpair NONE o fo_term_head) ts, phi))) x
 
 fun skip_formula ss =
   let

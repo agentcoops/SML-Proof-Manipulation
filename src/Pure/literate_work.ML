@@ -48,7 +48,7 @@ datatype proof_node = ProofNode of {
 
 
 (* Graph needs to indicate beginning and end of proof for ease of manipulation. *)
-datatype proof_graph = ProofGraph of string * string * proof_node T
+datatype proof_graph = ProofGraph of string * proof_node Graph.T
 
 (* So, now we have a form of the proof which contains this necessary
 pre-processing step.  the information exists in two ways: 1) analyzing
@@ -66,7 +66,7 @@ fun preprocessed_proof proof =
 
 
 (* ProofGraph is: start node, end node, graph. *)
-datatype proof_graph = ProofGraph of string * string * proof_node T
+datatype proof_graph = ProofGraph of string * string * proof_node Graph.T
 
 (* Do we need to preserve the string names or just keep the numerical identifiers? *)
 fun add_proof_step_to_graph (inference as Inference inf, graph) =
@@ -224,23 +224,28 @@ fun node_info graph id =
     in (node, preds, succs) end;
 
 
-fun graph_to_graphviz f graph file_name =
+(* Ugh, this is crazy inefficient... *)
+fun graph_to_graphviz get_node_name get_node_metadata graph file_name =
     let val graph_output = TextIO.openOut file_name
+        val keys = Graph.keys graph
         fun output line = TextIO.output (graph_output, line)
         fun output_connection node1 node2 =
-            output ("\t\"" ^ f node1 ^ "\" -> \"" ^ f node2 ^ "\";\n")
+            output ("\t\"" ^ get_node_name node1 ^ "\" -> \"" 
+                    ^ get_node_name node2 ^ "\";\n")
         fun plot_connections key = 
             List.app (fn node2 => output_connection key node2) 
                      (Graph.imm_succs graph key)
+        fun plot_node_info key = get_node_metadata key |> output
     in 
         (output "digraph ml_graph {\n";
-         List.app plot_connections (Graph.keys graph);
+         List.app plot_node_info keys;
+         List.app plot_connections keys;
          output "}\n";
          TextIO.closeOut graph_output)
     end
     
 fun proof_graph_to_graphviz graph file_name use_formula_label =
-    let fun handle_node key = 
+    let fun handle_node_name key = 
             let val (ProofNode node) = Graph.get_node graph key
                 val formula_string = 
                     if use_formula_label then
@@ -251,14 +256,28 @@ fun proof_graph_to_graphviz graph file_name use_formula_label =
                     NegatedConjecture => "~" ^ key ^ formula_string
                   | _ => key ^ formula_string
             end 
+        fun handle_node_metadata key = 
+            let val (ProofNode node) = Graph.get_node graph key
+                fun make_line_string color = 
+                    "\t\"" ^ handle_node_name key ^ 
+                    "\" [ color=\"" ^ color ^ "\"];\n"
+            in 
+                case #kind node of
+                    Conjecture => make_line_string "darkturquoise"
+                  | NegatedConjecture => make_line_string "crimson"
+                  | Axiom => make_line_string "yellow"
+                  | Lemma => make_line_string "lightskyblue"
+                  | Hypothesis => make_line_string "chartreuse"
+                  | _ => ""
+            end
     in 
-        graph_to_graphviz handle_node graph file_name
+        graph_to_graphviz handle_node_name handle_node_metadata graph file_name
     end
 
 fun direct_and_original_graphviz_for_tstp_file file_name use_formula_label =
     let val proof = graph_from_tstp_file file_name
         val contra = proof_contraposition proof
     in
-        (proof_graph_to_graphviz contra (file_name ^ "-direct.gv") use_formula_label;
-         proof_graph_to_graphviz proof (file_name ^ "-negation.gv") use_formula_label)
+        (proof_graph_to_graphviz contra (file_name ^ ".direct.gv") use_formula_label;
+         proof_graph_to_graphviz proof (file_name ^ ".negation.gv") use_formula_label)
     end

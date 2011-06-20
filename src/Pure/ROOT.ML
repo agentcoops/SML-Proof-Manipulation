@@ -327,4 +327,4 @@ use "../HOL/Tools/ATP/atp_util.ML";
 use "../HOL/Tools/ATP/atp_problem_new.ML"; 
 use "../HOL/Tools/ATP/atp_proof_new.ML";
 
-use "literate_work.ML"
+(*use "literate_work.ML"*)
