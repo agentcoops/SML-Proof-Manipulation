@@ -260,7 +260,8 @@ fun proof_graph_to_graphviz graph file_name use_formula_label =
             let val (ProofNode node) = Graph.get_node graph key
                 fun make_line_string color = 
                     "\t\"" ^ handle_node_name key ^ 
-                    "\" [ color=\"" ^ color ^ "\"];\n"
+                    "\" [ style=\"filled\", color=\"" ^ 
+                    color ^ "\"];\n"
             in 
                 case #kind node of
                     Conjecture => make_line_string "darkturquoise"
