@@ -200,23 +200,22 @@ fun proof_contraposition graph =
             end
         fun new_node (node_id, graph) =
             let val (ProofNode node) = Graph.get_node graph node_id
-                val negated_formula = #formula node |> negated_formula              
+                val negated_formula = #formula node |> negated_formula
+                fun node _ =
+                    ProofNode 
+                        {formula = negated_formula, 
+                         kind = Plain}
             in       
                 case #kind node of
-                    NegatedConjecture =>  
-                    Graph.map_node node_id 
-                                   (fn _ =>
-                                       ProofNode {formula = negated_formula, 
-                                                  kind = Plain})
-                                   graph
+                    NegatedConjecture => Graph.map_node node_id (node ()) graph
                   | _ => graph
             end
         val keys = Graph.keys graph
     in
         List.foldl node_contraposition graph keys
-                   |> (fn g1 => List.foldl new_node g1 keys)
+            |> (fn g1 => List.foldl new_node g1 keys)
     end
-
+    
 fun node_info graph id = 
     let val node = Graph.get_node graph id
         val succs = Graph.imm_succs graph id
