@@ -201,13 +201,13 @@ fun proof_contraposition graph =
         fun new_node (node_id, graph) =
             let val (ProofNode node) = Graph.get_node graph node_id
                 val negated_formula = #formula node |> negated_formula
-                fun node _ =
+                fun make_node _ =
                     ProofNode 
                         {formula = negated_formula, 
                          kind = Plain}
             in       
                 case #kind node of
-                    NegatedConjecture => Graph.map_node node_id (node ()) graph
+                    NegatedConjecture => Graph.map_node node_id make_node graph
                   | _ => graph
             end
         val keys = Graph.keys graph
@@ -281,3 +281,24 @@ fun direct_and_original_graphviz_for_tstp_file file_name use_formula_label =
         (proof_graph_to_graphviz contra (file_name ^ ".direct.gv") use_formula_label;
          proof_graph_to_graphviz proof (file_name ^ ".negation.gv") use_formula_label)
     end
+
+
+
+(* TISAR! *)
+
+datatype 'a tisar_proof =
+         Line of 'a tisar_line
+       | Block of 'a tisar_proof list
+       | Branch of 'a tisar_proof * 'a tisar_proof
+       | Have of 'a list
+       | Assume of 'a
+       | Hence of 'a                    
+
+val lasso1 = 
+    Block [Have ["5", "6"], 
+           Branch 
+               (Block [Assume "5", Hence "3", Hence "2"], 
+                Block [Assume "6", Hence "4", Hence "2"]),
+           Hence "1", 
+           Hence "0"]
+
