@@ -229,10 +229,8 @@ fun del_edge (x, y) G =
 (* Reverse edges! Some of these implementations could be made more robust... *)
 fun reverse_edge (x, y) G =
     if is_edge G (x, y) then
-        (writeln (PolyML.makestring x ^ " " ^ (PolyML.makestring y));
         G |> map_entry y (fn (i, (preds, succs)) => (i, (remove_key x preds, x :: succs)))
           |> map_entry x (fn (i, (preds, succs)) => (i, (y :: preds, remove_key y succs)))
-        )
     else G;
 
 fun reverse_edges [] G = G

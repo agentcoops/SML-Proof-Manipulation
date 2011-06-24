@@ -304,7 +304,6 @@ val lasso_graph =
     graph_from_tstp_file "../../gallery/crafted/lasso1/lasso1.tstp" 
        |> proof_contraposition
 
-
 (* So, it seems like we should perhaps extend the datatype to actually
 include the start of the graph in question, but for now we'll kill two
 birds with one stone and, given that it remains unclear whether all
@@ -314,7 +313,6 @@ ancestors
 
 my god: I think this is way too complicated for what I'm trying to
           accomplish... *)
-
 fun get_proof_start proof = 
     let fun is_true node_id = 
             let val (ProofNode node) = Graph.get_node proof node_id 
@@ -347,3 +345,13 @@ fun get_proof_start proof =
     in
         non_true_conjectures (Graph.keys proof)
     end            
+
+(* next we must proceed down the graph, *)
+fun graph_to_tisar proof = 
+    let val proof_start = get_proof_start proof
+                          
+        fun 
+
+    in
+        
+    end
