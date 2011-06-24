@@ -285,10 +285,8 @@ fun direct_and_original_graphviz_for_tstp_file file_name use_formula_label =
 
 
 (* TISAR! *)
-
 datatype 'a tisar_proof =
-         Line of 'a tisar_line
-       | Block of 'a tisar_proof list
+         Block of 'a tisar_proof list
        | Branch of 'a tisar_proof * 'a tisar_proof
        | Have of 'a list
        | Assume of 'a
@@ -302,3 +300,50 @@ val lasso1 =
            Hence "1", 
            Hence "0"]
 
+val lasso_graph = 
+    graph_from_tstp_file "../../gallery/crafted/lasso1/lasso1.tstp" 
+       |> proof_contraposition
+
+
+(* So, it seems like we should perhaps extend the datatype to actually
+include the start of the graph in question, but for now we'll kill two
+birds with one stone and, given that it remains unclear whether all
+proofs will include actual conjecture types as the start, derive the
+start of a graph as the first non-"TRUE" nodes with no (non-"TRUE")
+ancestors 
+
+my god: I think this is way too complicated for what I'm trying to
+          accomplish... *)
+
+fun get_proof_start proof = 
+    let fun is_true node_id = 
+            let val (ProofNode node) = Graph.get_node proof node_id 
+            in 
+                case #formula node of 
+                   AAtom (ATerm ("$true", _)) => true
+                 | AConn (ANot, [AAtom (ATerm ("$false", _))]) => true
+                 | _ => false
+            end
+            
+        val trues = Graph.filter_nodes (fn (key, _) => is_true key) proof
+
+        fun contains list element = List.exists (fn x => x = element) list
+
+        fun not_trues id = not (contains trues id)
+
+        fun non_true_preds id = List.filter not_trues (Graph.imm_preds proof id) 
+                                    
+        fun non_true_conjectures node_ids =
+            let fun folder (id, nodes) = 
+                    if not_trues id andalso non_true_preds id = []
+                    then id :: nodes
+                    else nodes
+                val surviving_ids = List.foldl folder [] node_ids
+            in 
+                if (List.rev surviving_ids) = node_ids then
+                    surviving_ids
+                else non_true_conjectures surviving_ids
+            end
+    in
+        non_true_conjectures (Graph.keys proof)
+    end            
