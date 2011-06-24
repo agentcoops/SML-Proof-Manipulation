@@ -284,25 +284,7 @@ fun direct_and_original_graphviz_for_tstp_file file_name use_formula_label =
 
 
 
-(* TISAR! *)
-datatype 'a tisar_proof =
-         Block of 'a tisar_proof list
-       | Branch of 'a tisar_proof * 'a tisar_proof
-       | Have of 'a list
-       | Assume of 'a
-       | Hence of 'a                    
 
-val lasso1 = 
-    Block [Have ["5", "6"], 
-           Branch 
-               (Block [Assume "5", Hence "3", Hence "2"], 
-                Block [Assume "6", Hence "4", Hence "2"]),
-           Hence "1", 
-           Hence "0"]
-
-val lasso_graph = 
-    graph_from_tstp_file "../../gallery/crafted/lasso1/lasso1.tstp" 
-       |> proof_contraposition
 
 (* So, it seems like we should perhaps extend the datatype to actually
 include the start of the graph in question, but for now we'll kill two
@@ -311,29 +293,33 @@ proofs will include actual conjecture types as the start, derive the
 start of a graph as the first non-"TRUE" nodes with no (non-"TRUE")
 ancestors 
 
-my god: I think this is way too complicated for what I'm trying to
-          accomplish... *)
+I think we also want to ignore conjectures here? *)
 fun get_proof_start proof = 
-    let fun is_true node_id = 
+    let fun is_undesirable node_id = 
             let val (ProofNode node) = Graph.get_node proof node_id 
             in 
-                case #formula node of 
+                (case #formula node of 
                    AAtom (ATerm ("$true", _)) => true
                  | AConn (ANot, [AAtom (ATerm ("$false", _))]) => true
-                 | _ => false
+                 | _ => false)
+                orelse 
+                (case #kind node of
+                     Conjecture => true
+                   | _ => false)
             end
             
-        val trues = Graph.filter_nodes (fn (key, _) => is_true key) proof
+        val undesirables = 
+            Graph.filter_nodes (fn (key, _) => is_undesirable key) proof
 
         fun contains list element = List.exists (fn x => x = element) list
 
-        fun not_trues id = not (contains trues id)
+        fun desirable id = not (contains undesirables id)
 
-        fun non_true_preds id = List.filter not_trues (Graph.imm_preds proof id) 
+        fun desirable_preds id = List.filter desirable (Graph.imm_preds proof id) 
                                     
         fun non_true_conjectures node_ids =
             let fun folder (id, nodes) = 
-                    if not_trues id andalso non_true_preds id = []
+                    if desirable id andalso desirable_preds id = []
                     then id :: nodes
                     else nodes
                 val surviving_ids = List.foldl folder [] node_ids
@@ -346,12 +332,58 @@ fun get_proof_start proof =
         non_true_conjectures (Graph.keys proof)
     end            
 
-(* next we must proceed down the graph, *)
+(* TISAR! *)
+datatype 'a tisar_proof =
+         Block of 'a tisar_proof list
+       | Branch of 'a tisar_proof list
+       | Have of 'a list
+       | Assume of 'a
+       | Hence of 'a                    
+
+datatype 'a tisar_proof2 =
+         Block of 'a tisar_proof * 'a tisar_proof
+       | Branch of 'a tisar_proof * 'a tisar_proof
+       | Have of 'a list
+       | Assume of 'a
+       | Hence of 'a
+
+val lasso1 = 
+    Block [Have ["5", "6"], 
+           Branch 
+               [Block [Assume "5", Hence "3", Hence "2"], 
+                Block [Assume "6", Hence "4", Hence "2"]],
+           Hence "1", 
+           Hence "0"]
+
+val lasso_graph = 
+    graph_from_tstp_file "../../gallery/crafted/lasso1/lasso1.tstp" 
+       |> proof_contraposition
+
+(* next we must proceed down the graph...
+
+so the start will probably either be a have or an assume. if it's a
+negated conjecture then what we have is assumption (proof by negation)
+and we act accordingly; otherwise, it's a have. 
+
+basically, if it's a 
+
+ *)
+
 fun graph_to_tisar proof = 
     let val proof_start = get_proof_start proof
-                          
-        fun 
 
+        fun handle_id node_id = Graph.imm_succs node_id |> handle_nodes
+
+        and handle_block node_id = 
+           Hence node_id :: handle_id node_id
+
+        and handle_branch node_id = 
+           Block (Assume node_id :: handle_id node_id)
+            
+        and handle_nodes nodes = 
+            if (length nodes) > 0 then
+                Branch (List.map handle_branch nodes)
+            else nth nodes 0 |> handle_block
     in
-        
+        handle_nodes proof_start
     end
