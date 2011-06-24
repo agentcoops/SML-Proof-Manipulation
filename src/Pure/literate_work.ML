@@ -283,7 +283,7 @@ fun direct_and_original_graphviz_for_tstp_file file_name use_formula_label =
     end
 
 
-
+fun contains list element = List.exists (fn x => x = element) list
 
 
 (* So, it seems like we should perhaps extend the datatype to actually
@@ -311,8 +311,6 @@ fun get_proof_start proof =
         val undesirables = 
             Graph.filter_nodes (fn (key, _) => is_undesirable key) proof
 
-        fun contains list element = List.exists (fn x => x = element) list
-
         fun desirable id = not (contains undesirables id)
 
         fun desirable_preds id = List.filter desirable (Graph.imm_preds proof id) 
@@ -329,7 +327,7 @@ fun get_proof_start proof =
                 else non_true_conjectures surviving_ids
             end
     in
-        non_true_conjectures (Graph.keys proof)
+        (non_true_conjectures (Graph.keys proof), undesirables)
     end            
 
 (* TISAR! *)
@@ -340,12 +338,13 @@ datatype 'a tisar_proof =
        | Assume of 'a
        | Hence of 'a                    
 
-datatype 'a tisar_proof2 =
+datatype 'a tisar_proof =
          Block of 'a tisar_proof * 'a tisar_proof
        | Branch of 'a tisar_proof * 'a tisar_proof
        | Have of 'a list
        | Assume of 'a
        | Hence of 'a
+       | QED
 
 val lasso1 = 
     Block [Have ["5", "6"], 
@@ -368,22 +367,30 @@ and we act accordingly; otherwise, it's a have.
 basically, if it's a 
 
  *)
-
 fun graph_to_tisar proof = 
-    let val proof_start = get_proof_start proof
+    let val (proof_start, to_ignore) = get_proof_start proof
 
-        fun handle_id node_id = Graph.imm_succs node_id |> handle_nodes
-
-        and handle_block node_id = 
-           Hence node_id :: handle_id node_id
-
-        and handle_branch node_id = 
-           Block (Assume node_id :: handle_id node_id)
+        fun handle_id node_id = Graph.imm_succs proof node_id |> handle_nodes
+                       
+        and handle_node node_id = 
+            let val (ProofNode node) = Graph.get_node proof node_id
+                val pred_count = 
+                    Graph.imm_preds proof node_id 
+                                    |> List.filter (fn x => contains to_ignore x)
+                                    |> length
+            in
+                case #kind node of
+                    NegatedConjecture => Hence ("~" ^ node_id)
+                  | _ => if (pred_count = 0) then (Have [node_id]) else (Hence node_id)
+            end
+         
+        and handle_branching (node :: []) = Block (Assume node, handle_id node)
+          | handle_branching (node :: tail) = 
+            Branch (handle_branching [node], handle_branching tail)
             
-        and handle_nodes nodes = 
-            if (length nodes) > 0 then
-                Branch (List.map handle_branch nodes)
-            else nth nodes 0 |> handle_block
+        and handle_nodes [] = QED
+          | handle_nodes (node :: []) = Block (handle_node node, handle_id node)
+          | handle_nodes nodes = handle_branching nodes
     in
         handle_nodes proof_start
     end
