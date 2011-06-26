@@ -370,23 +370,31 @@ basically, if it's a
 fun graph_to_tisar proof = 
     let val (proof_start, to_ignore) = get_proof_start proof
 
+        fun get_node_string node_id = 
+            let val (ProofNode node) = Graph.get_node proof node_id
+            in case #kind node of
+                   NegatedConjecture => "~" ^ node_id
+                 | _ => node_id
+            end
+
         fun handle_id node_id = Graph.imm_succs proof node_id |> handle_nodes
                        
         and handle_node node_id = 
             let val (ProofNode node) = Graph.get_node proof node_id
                 val pred_count = 
                     Graph.imm_preds proof node_id 
-                                    |> List.filter (fn x => contains to_ignore x)
+                                    |> List.filter (fn x => not (contains to_ignore x))
                                     |> length
+                val node_string = get_node_string node_id
             in
-                case #kind node of
-                    NegatedConjecture => Hence ("~" ^ node_id)
-                  | _ => if (pred_count = 0) then (Have [node_id]) else (Hence node_id)
+                if (pred_count = 0) then (Have [node_string]) 
+                else (Hence node_string)
             end
          
-        and handle_branching (node :: []) = Block (Assume node, handle_id node)
-          | handle_branching (node :: tail) = 
-            Branch (handle_branching [node], handle_branching tail)
+        and handle_branching (node :: []) = 
+            Block (Assume (get_node_string node), handle_id node)
+          | handle_branching (node :: nodes) = 
+            Branch (handle_branching [node], handle_branching nodes)
             
         and handle_nodes [] = QED
           | handle_nodes (node :: []) = Block (handle_node node, handle_id node)
