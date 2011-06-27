@@ -404,8 +404,12 @@ fun graph_to_tisar proof =
     end
 
 fun list_to_string lst delimiter =
-    let fun folder (value, accum) = accum ^ delimiter ^ value
-    in List.foldl folder "" lst end
+    let fun folder (value, accum) = 
+            if not (accum = "") then (accum ^ delimiter ^ value)
+            else value
+    in 
+        List.foldl folder "" lst 
+    end
 
 fun tisar_to_string value =
     let fun make_indentation 0 = ""
@@ -415,16 +419,16 @@ fun tisar_to_string value =
             let val indentation = make_indentation indent
             in case value of
                    QED => ""
-                 | Assume x => indentation ^ "Assume " ^ x 
-                 | Hence x => indentation ^ "Hence " ^ x 
+                 | Assume x => "Assume " ^ x 
+                 | Hence x => "\n" ^ indentation ^ " Hence " ^ x 
                  | Have lst => 
                    indentation ^ "Have " ^ (list_to_string lst " or ")
                  | Block (first, rest) =>
-                   indentation ^ tisar_to_string indent first
-                   ^ "\n" ^ tisar_to_string indent rest
+                   tisar_to_string' indent first ^ tisar_to_string' indent rest
                  | Branch (left, right) =>
-                   indentation ^ "[[\n" ^ tisar_to_string' (indent + 2) left 
-                   ^ "||\n" ^ tisar_to_string' (indent + 2) right ^ "]]"
+                   indentation ^ "\n{ " ^ tisar_to_string' (indent + 1) left 
+                   ^ " }\nmoreover\n" ^ indentation ^ "{ " 
+                   ^ tisar_to_string' (indent + 1) right ^ " }\n"
             end
     in
         tisar_to_string' 0 value
