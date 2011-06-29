@@ -58,9 +58,9 @@ This project will consist in several concrete stages:
 (2) Integration with TSTP
 (3) Implementation of two proof manipulation algorithms to ensure the
     usability of proof data structure. Likely some refactoring.
-    a) factoring out of common proof components (avoid exponential 
+    a) proof by contradiction into direct proof    
+    b) factoring out of common proof components (avoid exponential 
        explosion)
-    b) proof by contradiction into direct proof
 (4) Integration with Isabelle
 (5) Implementation of the rest of decided upon manipulation algorithms.
      a) linear reorganization of proofs (better legibility)

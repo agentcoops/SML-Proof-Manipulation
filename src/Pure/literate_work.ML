@@ -184,12 +184,20 @@ fun conjectures_in_list graph nodes =
         List.filter is_negated_conjecture nodes
     end;
 
-(* So this now does nothing to the node itself, rather just swapping the appropriate edges. *)
+fun constant_list_of_same_size value lst = 
+    List.tabulate (length lst, fn _ => value)
+    
+fun contains list element = List.exists (fn x => x = element) list
+    
+(* So this now does nothing to the node itself, rather just swapping the appropriate edges. 
+
+OK! We can do this as a map-reduce style problem:
+working on the subgraph centered around a node. swap all necessary edges, then combine together.
+
+*)
 fun proof_contraposition graph =
     let fun node_contraposition (node_id, graph) = 
-            let fun constant_list_of_same_size value lst = 
-                    List.tabulate (length lst, fn _ => value) 
-                val pred_reversals = 
+            let val pred_reversals = 
                     (Graph.imm_preds graph node_id) 
                         |> conjectures_in_list graph 
                         |> (fn preds => 
@@ -210,6 +218,85 @@ fun proof_contraposition graph =
                     NegatedConjecture => Graph.map_node node_id make_node graph
                   | _ => graph
             end
+        val keys = Graph.keys graph
+    in
+        List.foldl node_contraposition graph keys
+            |> (fn g1 => List.foldl new_node g1 keys)
+    end
+
+
+fun swap_edges graph _ [] = graph
+  | swap_edges graph node_id ((node1, node2) :: nodes) =
+    let val new_graph = 
+            Graph.del_edge (node_id, node1) graph
+                           |> Graph.add_edge (node_id, node2)
+    in 
+        swap_edges new_graph node_id nodes 
+    end
+
+fun partition_graph f graph =
+    let val keys = Graph.keys graph
+    in 
+        List.partition f keys
+    end
+
+
+(* So, try2: this is the "mapreduce" implementation. Guess we could
+parallelize it eventually if it turns out not to be particularly
+performant... *)
+fun proof_contraposition2 graph =
+    (* first need to be able to get subgraph around a node. *)
+    let fun node_subgraph node = 
+            let val surroundings = (* I think I just need to get the preds here... *)
+                    Graph.imm_preds graph node @ (Graph.imm_succs graph node)
+            in
+                Graph.filter (fn key => fn _ => contains surroundings key) graph
+            end
+
+        (* the reduce step. naive merging for now. *)
+        fun merge_subgraphs (sub_graph, new_graph) = 
+            Graph.join (fn _ => fn (left, _) => left) 
+                       (sub_graph, new_graph)
+
+
+        fun is_conjecture node_id = 
+            let val (ProofNode node) = Graph.get_node graph node_id
+            in 
+                case #kind node of
+                    NegatedConjecture => true
+                  | Conjecture => true
+                  | _ => false
+            end
+
+        fun node_contraposition (node_id, graph) = 
+            let val graph = node_subgraph node_id
+                val (plains, negateds) = partition_graph is_conjecture 
+
+
+
+val pred_reversals = 
+                    (Graph.imm_preds graph node_id) 
+                        |> conjectures_in_list graph 
+                        |> (fn preds => 
+                               ListPair.zip (preds,
+                                             constant_list_of_same_size node_id preds))
+            in
+                graph |> Graph.reverse_edges pred_reversals
+            end
+            
+        fun new_node (node_id, graph) =
+            let val (ProofNode node) = Graph.get_node graph node_id
+                val negated_formula = #formula node |> negated_formula
+                fun make_node _ =
+                    ProofNode 
+                        {formula = negated_formula, 
+                         kind = Plain}
+            in       
+                case #kind node of
+                    NegatedConjecture => Graph.map_node node_id make_node graph
+                  | _ => graph
+            end
+            
         val keys = Graph.keys graph
     in
         List.foldl node_contraposition graph keys
@@ -283,7 +370,7 @@ fun direct_and_original_graphviz_for_tstp_file file_name use_formula_label =
     end
 
 
-fun contains list element = List.exists (fn x => x = element) list
+
 
 
 (* So, it seems like we should perhaps extend the datatype to actually
@@ -360,11 +447,15 @@ val lasso_graph =
 
 (* next we must proceed down the graph...
 
-so the start will probably either be a have or an assume. if it's a
-negated conjecture then what we have is assumption (proof by negation)
-and we act accordingly; otherwise, it's a have. 
+So, what I have so far is quite insufficient... This doesn't actually
+handle the case where a node depends on two different nodes for
+support and leads to all kinds of crazy proofs when the structure is
+slightly complicated (especially plain and negated-conjecture
+structure together)... 
 
-basically, if it's a 
+Branches, for example, need to be captured in a block structure such
+that commonalities can be factored out... Probably something slightly
+cps like.
 
  *)
 fun graph_to_tisar proof = 
@@ -403,6 +494,7 @@ fun graph_to_tisar proof =
         handle_nodes proof_start
     end
 
+(* Helper function for joining a list. *)
 fun list_to_string lst delimiter =
     let fun folder (value, accum) = 
             if not (accum = "") then (accum ^ delimiter ^ value)
@@ -411,6 +503,7 @@ fun list_to_string lst delimiter =
         List.foldl folder "" lst 
     end
 
+(* Serialize a tisar proof to string. *)
 fun tisar_to_string value =
     let fun make_indentation 0 = ""
           | make_indentation x = make_indentation (x-1) ^ " "
