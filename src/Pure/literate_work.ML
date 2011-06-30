@@ -161,29 +161,22 @@ merge (fn (x,y) => x=y) (graph, graph2);
 *)
 
 
+fun is_conjecture graph node_id = 
+    let val (ProofNode node) = Graph.get_node graph node_id
+    in 
+        case #kind node of
+            NegatedConjecture => true
+          | Conjecture => true
+          | _ => false
+    end
+
+fun conjectures_in_list graph nodes = 
+    List.filter (is_conjecture graph) nodes
 
 fun conjectures graph = 
-    let fun is_conjecture (_, (ProofNode node, _)) =
-            case #kind node of
-                Conjecture => true
-              | _ => false
-    in
-        Graph.filter_nodes is_conjecture graph
-    end;
+    conjectures_in_list graph (Graph.keys graph)
 
-fun conjectures_in_list graph nodes =
-    let fun is_negated_conjecture key =
-            let val (ProofNode node) = Graph.get_node graph key
-            in
-                case #kind node of
-                    NegatedConjecture => true
-                  | Conjecture => true
-                  | _ => false
-            end
-    in
-        List.filter is_negated_conjecture nodes
-    end;
-
+ 
 fun constant_list_of_same_size value lst = 
     List.tabulate (length lst, fn _ => value)
     
@@ -224,16 +217,6 @@ fun proof_contraposition graph =
             |> (fn g1 => List.foldl new_node g1 keys)
     end
 
-
-fun swap_edges graph _ [] = graph
-  | swap_edges graph node_id ((node1, node2) :: nodes) =
-    let val new_graph = 
-            Graph.del_edge (node_id, node1) graph
-                           |> Graph.add_edge (node_id, node2)
-    in 
-        swap_edges new_graph node_id nodes 
-    end
-
 fun partition_graph f graph =
     let val keys = Graph.keys graph
     in 
@@ -250,38 +233,39 @@ fun proof_contraposition2 graph =
             let val surroundings = (* I think I just need to get the preds here... *)
                     Graph.imm_preds graph node @ (Graph.imm_succs graph node)
             in
-                Graph.filter (fn key => fn _ => contains surroundings key) graph
+                Graph.filter (fn (key, _) => contains surroundings key) graph
+            end
+
+        fun swap_edges graph _ [] = graph
+          | swap_edges graph node_id ((node1, node2) :: nodes) =
+            let val new_graph = 
+                    Graph.del_edge (node_id, node1) graph
+                                   |> Graph.add_edge (node_id, node2)
+            in 
+                swap_edges new_graph node_id nodes 
             end
 
         (* the reduce step. naive merging for now. *)
-        fun merge_subgraphs (sub_graph, new_graph) = 
+        fun merge_subgraphs sub_graph new_graph = 
             Graph.join (fn _ => fn (left, _) => left) 
                        (sub_graph, new_graph)
 
-
-        fun is_conjecture node_id = 
-            let val (ProofNode node) = Graph.get_node graph node_id
-            in 
-                case #kind node of
-                    NegatedConjecture => true
-                  | Conjecture => true
-                  | _ => false
-            end
-
         fun node_contraposition (node_id, graph) = 
-            let val graph = node_subgraph node_id
-                val (plains, negateds) = partition_graph is_conjecture 
-
-
-
-val pred_reversals = 
-                    (Graph.imm_preds graph node_id) 
-                        |> conjectures_in_list graph 
-                        |> (fn preds => 
-                               ListPair.zip (preds,
-                                             constant_list_of_same_size node_id preds))
+            let val subgraph = node_subgraph node_id
+                val (plains, conjectures) = partition_graph (is_conjecture graph) subgraph
+                val reversals = 
+                    if (contains conjectures node_id) then
+                        ListPair.zip (conjectures,
+                                      constant_list_of_same_size node_id conjectures)
+                    else []
+                val swaps = 
+                    ListPair.zip (constant_list_of_same_size node_id conjectures,
+                                  conjectures)
             in
-                graph |> Graph.reverse_edges pred_reversals
+                List.foldl (fn (plain_id, graph) => 
+                               merge_subgraphs (swap_edges graph plain_id swaps) graph)
+                           Graph.empty plains
+                           |> Graph.reverse_edges reversals 
             end
             
         fun new_node (node_id, graph) =
