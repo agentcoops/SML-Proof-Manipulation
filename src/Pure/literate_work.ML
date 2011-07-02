@@ -198,8 +198,9 @@ fun proof_contraposition graph =
                                ListPair.zip (preds,
                                              constant_list_of_same_size node_id preds))
             in
-                graph |> Graph.reverse_edges pred_reversals
+                Graph.reverse_edges pred_reversals graph
             end
+
         fun new_node (node_id, graph) =
             let val (ProofNode node) = Graph.get_node graph node_id
                 val negated_formula = #formula node |> negated_formula
@@ -224,57 +225,78 @@ fun partition_graph f graph =
         List.partition f keys
     end;
 
+fun swap_edges graph _ [] = graph
+  | swap_edges graph node_id ((node1, node2) :: nodes) =
+    let val new_graph = 
+            Graph.del_edge (node_id, node1) graph
+                           |> Graph.add_edge (node_id, node2)
+    in 
+        swap_edges new_graph node_id nodes 
+    end
+
+(* the reduce step. naive merging for now. *)
+fun merge_subgraphs sub_graph new_graph = 
+    Graph.join (fn _ => fn (left, _) => left) 
+               (sub_graph, new_graph)
+    
+fun node_subgraph graph node = 
+    let val surroundings = Graph.imm_preds graph node @ [node]
+    in
+        Graph.filter 
+            (fn (key, _) => contains surroundings key) 
+            graph
+    end
+
+fun del_edges id ([]) graph = graph
+  | del_edges id (node :: nodes) graph = 
+    Graph.del_edge (id, node) graph |> del_edges id nodes
+
+fun id x = 
+    let val y = x
+    in y end;
+
 (* So, try2: this is the "mapreduce" implementation. Guess we could
 parallelize it eventually if it turns out not to be particularly
 performant... *)
-
-
-
-fun proof_contraposition2 graph =
+fun proof_contraposition2 original_graph =
     (* first need to be able to get subgraph around a node. *)
-    let fun node_subgraph node = 
-            let val surroundings = [node] @ Graph.imm_preds graph node
-            in
-                Graph.filter (fn (key, _) => contains surroundings key) graph
-            end
-
-        fun swap_edges graph _ [] = graph
-          | swap_edges graph node_id ((node1, node2) :: nodes) =
-            let val new_graph = 
-                    Graph.del_edge (node_id, node1) graph
-                                   |> Graph.add_edge (node_id, node2)
-            in 
-                swap_edges new_graph node_id nodes 
-            end
-
-        (* the reduce step. naive merging for now. *)
-        fun merge_subgraphs sub_graph new_graph = 
-            Graph.join (fn _ => fn (left, _) => left) 
-                       (sub_graph, new_graph)
-
+    let val get_subgraph = node_subgraph original_graph
+         
         fun node_contraposition (node_id, graph) = 
-            let val subgraph = node_subgraph node_id
-                val _ = writeln "1"
-                val (plains, conjectures) = partition_graph (is_conjecture graph) subgraph
-                val _ = writeln "2"
+            let val subgraph = get_subgraph node_id
+                val conjecture_check = is_conjecture subgraph
+                val (conjectures, plains) = 
+                    partition_graph conjecture_check subgraph
                 val reversals = 
                     if (contains conjectures node_id) then
-                        ListPair.zip (conjectures,
-                                      constant_list_of_same_size node_id conjectures)
+                        ListPair.zip 
+                            (conjectures,
+                             constant_list_of_same_size node_id conjectures)
                     else []
-                val _ = writeln "3"
                 val swaps = 
-                    ListPair.zip (constant_list_of_same_size node_id conjectures,
-                                  conjectures)
-                val _ = writeln "4"
+                    ListPair.zip 
+                        (constant_list_of_same_size node_id conjectures,
+                         conjectures)
+
+                (*fun del_edges_if_plain graph = 
+                    if (contains plains node_id) then
+                        let val conjecture_children = 
+                                Graph.imm_succs original_graph node_id
+                                                |> List.filter conjecture_check 
+                        in
+                            del_edges node_id conjecture_children graph
+                        end
+                    else graph*)
+                         
+                val swapped_subgraph = 
+                    List.foldl (fn (plain_id, graph_accum) => 
+                                   swap_edges graph_accum plain_id swaps)
+                               subgraph
+                               plains
+                               |> Graph.reverse_edges reversals  
+                               (*|> del_edges_if_plain*)
             in
-                (writeln ("working on " ^ node_id);
-                 List.foldl (fn (plain_id, graph) => 
-                                (writeln ("on " ^ plain_id); 
-                                 merge_subgraphs (swap_edges graph plain_id swaps) graph))
-                            Graph.empty 
-                            plains
-                            |> Graph.reverse_edges reversals)
+                merge_subgraphs swapped_subgraph graph
             end
             
         fun new_node (node_id, graph) =
@@ -287,13 +309,13 @@ fun proof_contraposition2 graph =
             in       
                 case #kind node of
                     NegatedConjecture => Graph.map_node node_id make_node graph
-                  | _ => graph
+                  | _ => (writeln "not negated"; graph)
             end
             
-        val keys = Graph.keys graph
+        val keys = Graph.keys original_graph
+        val redirected_graph = List.foldl node_contraposition Graph.empty keys
     in
-        List.foldl node_contraposition graph keys
-            |> (fn g1 => List.foldl new_node g1 keys)
+        List.foldl new_node redirected_graph keys
     end
     
 fun node_info graph id = 
@@ -356,15 +378,11 @@ fun proof_graph_to_graphviz graph file_name use_formula_label =
 
 fun direct_and_original_graphviz_for_tstp_file file_name use_formula_label =
     let val proof = graph_from_tstp_file file_name
-        val contra = proof_contraposition proof
+        val contra = proof_contraposition2 proof
     in
         (proof_graph_to_graphviz contra (file_name ^ ".direct.gv") use_formula_label;
          proof_graph_to_graphviz proof (file_name ^ ".negation.gv") use_formula_label)
     end
-
-
-
-
 
 (* So, it seems like we should perhaps extend the datatype to actually
 include the start of the graph in question, but for now we'll kill two
