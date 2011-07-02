@@ -417,13 +417,13 @@ datatype 'a tisar_proof =
        | Hence of 'a
        | QED
 
-val lasso1 = 
+(*val lasso1 = 
     Block [Have ["5", "6"], 
            Branch 
                [Block [Assume "5", Hence "3", Hence "2"], 
                 Block [Assume "6", Hence "4", Hence "2"]],
            Hence "1", 
-           Hence "0"]
+           Hence "0"]*)
 
 val lasso_graph = 
     graph_from_tstp_file "../../gallery/crafted/lasso1/lasso1.tstp" 

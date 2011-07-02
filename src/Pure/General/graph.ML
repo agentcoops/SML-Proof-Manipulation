@@ -121,10 +121,7 @@ fun filter_graph P G =
     let val good_nodes = filter_nodes P G
         fun is_good_node n =
             List.exists 
-                (fn k =>
-                    case k of
-                        x => true
-                      | _ => false)
+                (fn k => if eq_key (k, n) then true else false)
                 good_nodes
     in
         subgraph is_good_node G
