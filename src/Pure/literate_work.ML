@@ -15,6 +15,7 @@ open ATP_Problem;
 open Graph;
 (*open Symtab;*)
 
+PolyML.Compiler.debug := true;
 
 (* This is just actually getting a proof... Some basic SML manipulation. *)
 val test_proof = ATP_Proof.atp_proof_from_tstp_file "" "test.tstp";
@@ -221,17 +222,18 @@ fun partition_graph f graph =
     let val keys = Graph.keys graph
     in 
         List.partition f keys
-    end
-
+    end;
 
 (* So, try2: this is the "mapreduce" implementation. Guess we could
 parallelize it eventually if it turns out not to be particularly
 performant... *)
+
+
+
 fun proof_contraposition2 graph =
     (* first need to be able to get subgraph around a node. *)
     let fun node_subgraph node = 
-            let val surroundings = (* I think I just need to get the preds here... *)
-                    Graph.imm_preds graph node @ (Graph.imm_succs graph node)
+            let val surroundings = [node] @ Graph.imm_preds graph node
             in
                 Graph.filter (fn (key, _) => contains surroundings key) graph
             end
@@ -252,20 +254,27 @@ fun proof_contraposition2 graph =
 
         fun node_contraposition (node_id, graph) = 
             let val subgraph = node_subgraph node_id
+                val _ = writeln "1"
                 val (plains, conjectures) = partition_graph (is_conjecture graph) subgraph
+                val _ = writeln "2"
                 val reversals = 
                     if (contains conjectures node_id) then
                         ListPair.zip (conjectures,
                                       constant_list_of_same_size node_id conjectures)
                     else []
+                val _ = writeln "3"
                 val swaps = 
                     ListPair.zip (constant_list_of_same_size node_id conjectures,
                                   conjectures)
+                val _ = writeln "4"
             in
-                List.foldl (fn (plain_id, graph) => 
-                               merge_subgraphs (swap_edges graph plain_id swaps) graph)
-                           Graph.empty plains
-                           |> Graph.reverse_edges reversals 
+                (writeln ("working on " ^ node_id);
+                 List.foldl (fn (plain_id, graph) => 
+                                (writeln ("on " ^ plain_id); 
+                                 merge_subgraphs (swap_edges graph plain_id swaps) graph))
+                            Graph.empty 
+                            plains
+                            |> Graph.reverse_edges reversals)
             end
             
         fun new_node (node_id, graph) =
