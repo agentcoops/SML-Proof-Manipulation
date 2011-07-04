@@ -263,7 +263,6 @@ fun id x =
  We need this to tell whether it's a case split in tisar.
  *)
 
-
 fun plains_debug graph plains round = 
     let fun plain_debug plain = 
             writeln (plain ^ ": " ^ (Graph.imm_succs graph plain |> PolyML.makestring))
@@ -271,7 +270,6 @@ fun plains_debug graph plains round =
         (if round = 1 then writeln "BEFORE: " else writeln "END: ";
          List.app plain_debug plains)
     end
-
 
 (* So, try2: this is the "mapreduce" implementation. Guess we could
 parallelize it eventually if it turns out not to be particularly
@@ -295,19 +293,6 @@ fun proof_contraposition2 original_graph =
                     ListPair.zip 
                         (constant_list_of_same_size node_id conjectures,
                          conjectures)
-
-                (* fun del_edges_if_plain graph = 
-                    if (contains plains node_id) then
-                        let val conjecture_children = 
-                                Graph.imm_succs original_graph node_id
-                                                |> List.filter conjecture_check 
-                        in
-                            del_edges node_id conjecture_children graph
-                        end
-                    else graph *)
-                (* val _ = writeln "BEFORE :"
-                val _ = plains_debug subgraph plains *)
-
                 val swapped_subgraph = 
                     List.foldl (fn (plain_id, graph_accum) => 
                                    swap_edges graph_accum plain_id swaps)
