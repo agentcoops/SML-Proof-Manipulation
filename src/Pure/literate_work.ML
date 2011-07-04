@@ -216,24 +216,27 @@ fun proof_contraposition graph =
         val keys = Graph.keys graph
     in
         List.foldl node_contraposition graph keys
-            |> (fn g1 => List.foldl new_node g1 keys)
+                   |> (fn g1 => List.foldl new_node g1 keys)
     end
-
+    
 fun partition_graph f graph =
     let val keys = Graph.keys graph
     in 
         List.partition f keys
-    end;
-
+    end
+    
 fun swap_edges graph _ [] = graph
   | swap_edges graph node_id ((node1, node2) :: nodes) =
     let val new_graph = 
-            Graph.del_edge (node_id, node1) graph
-                           |> Graph.add_edge (node_id, node2)
+            if node1 = node2 then 
+                graph
+            else
+                Graph.del_edge (node_id, node1) graph
+                               |> Graph.add_edge (node_id, node2)
     in 
-        swap_edges new_graph node_id nodes 
+        swap_edges new_graph node_id nodes
     end
-
+    
 (* the reduce step. naive merging for now. *)
 fun merge_subgraphs sub_graph new_graph = 
     Graph.join (fn _ => fn (left, _) => left) 
@@ -254,6 +257,21 @@ fun del_edges id ([]) graph = graph
 fun id x = 
     let val y = x
     in y end;
+
+(*
+ KEEP TRACK OF WHETHER A NODE WAS ONCE A NEGATED CONJECTURE.
+ We need this to tell whether it's a case split in tisar.
+ *)
+
+
+fun plains_debug graph plains round = 
+    let fun plain_debug plain = 
+            writeln (plain ^ ": " ^ (Graph.imm_succs graph plain |> PolyML.makestring))
+    in 
+        (if round = 1 then writeln "BEFORE: " else writeln "END: ";
+         List.app plain_debug plains)
+    end
+
 
 (* So, try2: this is the "mapreduce" implementation. Guess we could
 parallelize it eventually if it turns out not to be particularly
@@ -278,7 +296,7 @@ fun proof_contraposition2 original_graph =
                         (constant_list_of_same_size node_id conjectures,
                          conjectures)
 
-                (*fun del_edges_if_plain graph = 
+                (* fun del_edges_if_plain graph = 
                     if (contains plains node_id) then
                         let val conjecture_children = 
                                 Graph.imm_succs original_graph node_id
@@ -286,15 +304,16 @@ fun proof_contraposition2 original_graph =
                         in
                             del_edges node_id conjecture_children graph
                         end
-                    else graph*)
-                         
+                    else graph *)
+                (* val _ = writeln "BEFORE :"
+                val _ = plains_debug subgraph plains *)
+
                 val swapped_subgraph = 
                     List.foldl (fn (plain_id, graph_accum) => 
                                    swap_edges graph_accum plain_id swaps)
                                subgraph
                                plains
-                               |> Graph.reverse_edges reversals  
-                               (*|> del_edges_if_plain*)
+                               |> Graph.reverse_edges reversals
             in
                 merge_subgraphs swapped_subgraph graph
             end
@@ -309,7 +328,7 @@ fun proof_contraposition2 original_graph =
             in       
                 case #kind node of
                     NegatedConjecture => Graph.map_node node_id make_node graph
-                  | _ => (writeln "not negated"; graph)
+                  | _ => graph
             end
             
         val keys = Graph.keys original_graph
@@ -444,13 +463,13 @@ datatype 'a tisar_proof =
        | Hence of 'a
        | QED
 
-(*val lasso1 = 
+(* val lasso1 = 
     Block [Have ["5", "6"], 
            Branch 
                [Block [Assume "5", Hence "3", Hence "2"], 
                 Block [Assume "6", Hence "4", Hence "2"]],
            Hence "1", 
-           Hence "0"]*)
+           Hence "0"] *)
 
 val lasso_graph = 
     graph_from_tstp_file "../../gallery/crafted/lasso1/lasso1.tstp" 
@@ -467,7 +486,6 @@ structure together)...
 Branches, for example, need to be captured in a block structure such
 that commonalities can be factored out... Probably something slightly
 cps like.
-
  *)
 fun graph_to_tisar proof = 
     let val (proof_start, to_ignore) = get_proof_start proof
