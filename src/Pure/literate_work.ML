@@ -104,7 +104,6 @@ fun graph_from_tstp_file file =
 val proof_graph = proof_to_graph test_proof;
 
 
-
 (* helper functions to affect the negativity of a node. *)
 fun formula_from_node (ProofNode node) = #formula node
 
@@ -254,9 +253,6 @@ fun del_edges id ([]) graph = graph
   | del_edges id (node :: nodes) graph = 
     Graph.del_edge (id, node) graph |> del_edges id nodes
 
-fun id x = 
-    let val y = x
-    in y end;
 
 (*
  KEEP TRACK OF WHETHER A NODE WAS ONCE A NEGATED CONJECTURE.
