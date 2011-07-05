@@ -13,9 +13,9 @@ AUTHOR: coopf
 open ATP_Proof;
 open ATP_Problem;
 open Graph;
-(*open Symtab;*)
 
 PolyML.Compiler.debug := true;
+
 
 (* This is just actually getting a proof... Some basic SML manipulation. *)
 val test_proof = ATP_Proof.atp_proof_from_tstp_file "" "test.tstp";
