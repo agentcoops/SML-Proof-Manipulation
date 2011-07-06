@@ -6,7 +6,9 @@ open Graph;
 
 signature NegatableFormula = sig
     type negatable_formula
-    val negated_formula: formula -> formula
+    type proof
+    val negated_formula: negatable_formula -> negatable_formula
+    val string_for_formula: negatable_formula -> string
 end
 
 
@@ -16,11 +18,11 @@ signature ProofGraph = sig
                 
     type proof
     type proof_node
-    type proof_graph
+    datatype proof_graph = ProofGraph of string * proof_node Graph.T
     val proof_to_graph: proof -> proof_graph
-    val graph_from_tstp_file: string -> proof_graph
+    (* val graph_from_tstp_file: string -> proof_graph *)
     val proof_contraposition: proof_graph -> proof_graph        
-    val proof_graph_to_graphviz: proof_graph -> ()
+    val proof_graph_to_graphviz: proof_graph -> string -> bool -> unit
 end
 
 
@@ -32,6 +34,10 @@ fun constant_list_of_same_size value lst =
     
 fun contains list element = List.exists (fn x => x = element) list
     
+(* FIND WHERE TO PUT THIS!!
+
+ fun graph_from_tstp_file file =
+    ATP_Proof.atp_proof_from_tstp_file "" file |> proof_to_graph *)
 
 fun partition_graph f graph =
     let val keys = Graph.keys graph
@@ -86,19 +92,19 @@ fun graph_to_graphviz get_node_name get_node_metadata graph file_name =
          output "}\n";
          TextIO.closeOut graph_output)
     end
-
-
-
 end
 
 
+open Help
 
 functor MakeProofGraph(formula_struct: NegatableFormula): ProofGraph = 
 struct
 
 type formula = formula_struct.negatable_formula
+type proof = formula_struct.proof
 val negated_formula = formula_struct.negated_formula
-                      
+val string_for_formula = formula_struct.string_for_formula                      
+
 fun dependencies_from_inference (Inference inf) = 
     (List.map (fn justification => #1 justification |> Int.fromString) 
               (#justification inf))
@@ -127,16 +133,13 @@ fun add_proof_step_to_graph (inference as Inference inf, graph) =
 fun proof_to_graph proof = 
     List.foldl add_proof_step_to_graph Graph.empty proof;
 
-fun graph_from_tstp_file file =
-    ATP_Proof.atp_proof_from_tstp_file "" file |> proof_to_graph
-
 
 fun proof_graph_to_graphviz graph file_name use_formula_label =
     let fun handle_node_name key = 
             let val (ProofNode node) = Graph.get_node graph key
                 val formula_string = 
                     if use_formula_label then
-                        ": " ^ string_for_untyped_formula FOF (#formula node)
+                        ": " ^ string_for_formula (#formula node)
                     else ""
             in
                 case #kind node of
@@ -234,5 +237,6 @@ struct
 type formula = (string, string, string fo_term) ATP_Proof.formula (* this might be ATP_Problem? *)
 
 fun negated_formula formula = AConn(ANot, [formula])
+fun string_for_formula formula = ATP_Problemstring_for_untyped_formula FOF formula
 
 end
