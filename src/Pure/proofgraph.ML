@@ -4,21 +4,21 @@ open ATP_Problem;
 open Graph;
 
 
-signature NegatableFormula = sig
-    type negatable_formula
-    type proof
-    val negated_formula: negatable_formula -> negatable_formula
-    val string_for_formula: negatable_formula -> string
+signature NEGATABLE_FORMULA = sig
+    type formula
+
+    val negated_formula: formula -> formula
+    val string_for_formula: formula -> string
 end
 
 
-signature ProofGraph = sig
+signature PROOF_GRAPH = sig
     type formula
     val negated_formula: formula -> formula
                 
-    type proof
     type proof_node
-    datatype proof_graph = ProofGraph of string * proof_node Graph.T
+    type proof = formula ATP_Proof.step list
+    datatype proof_graph = ProofGraph of proof_node Graph.T
     val proof_to_graph: proof -> proof_graph
     (* val graph_from_tstp_file: string -> proof_graph *)
     val proof_contraposition: proof_graph -> proof_graph        
@@ -97,15 +97,21 @@ end
 
 open Help
 
-functor MakeProofGraph(formula_struct: NegatableFormula): ProofGraph = 
+
+functor MakeProofGraph(formula_struct: NEGATABLE_FORMULA): PROOF_GRAPH = 
 struct
 
-type formula = formula_struct.negatable_formula
-type proof = formula_struct.proof
-val negated_formula = formula_struct.negated_formula
-val string_for_formula = formula_struct.string_for_formula                      
+open formula_struct
+(*open ATP_Problem
+open ATP_Proof*)
 
-fun dependencies_from_inference (Inference inf) = 
+type proof = formula ATP_Proof.step list        
+(*datatype formula_kind = 
+         Axiom | Definition | Lemma | Hypothesis |
+         Conjecture | NegatedConjecture | Plain*)
+
+
+fun dependencies_from_inference (ATP_Proof.Inference inf) = 
     (List.map (fn justification => #1 justification |> Int.fromString) 
               (#justification inf))
         |> List.filter Option.isSome
@@ -113,28 +119,28 @@ fun dependencies_from_inference (Inference inf) =
 
 datatype proof_node = ProofNode of {
          formula: formula,
-         kind: ATP_Problem.formula_kind
+         kind: formula_kind
          (*, justification? *)
 }
 
-datatype proof_graph = ProofGraph of string * proof_node Graph.T
+datatype proof_graph = ProofGraph of proof_node Graph.T
 
-fun add_proof_step_to_graph (inference as Inference inf, graph) =
+fun add_proof_step_to_graph (inference as ATP_Proof.Inference inf, graph) =
     let val name = #1 (#name inf)
         val graph_with_node = 
-            new_node (name, ProofNode {formula = #formula inf, kind = #kind inf}) 
-                     graph
+            Graph.new_node (name, ProofNode {formula = #formula inf, kind = #kind inf})
+                           graph
         val dependencies = dependencies_from_inference inference
-        fun add_justification_edge (x, graph) = add_edge (x, name) graph     
+        fun add_justification_edge (x, graph) = 
+            Graph.add_edge (x, name) graph     
     in
         List.foldl add_justification_edge graph_with_node dependencies
     end
 
 fun proof_to_graph proof = 
-    List.foldl add_proof_step_to_graph Graph.empty proof;
+    ProofGraph (List.foldl add_proof_step_to_graph Graph.empty proof);
 
-
-fun proof_graph_to_graphviz graph file_name use_formula_label =
+fun proof_graph_to_graphviz (ProofGraph graph) file_name use_formula_label =
     let fun handle_node_name key = 
             let val (ProofNode node) = Graph.get_node graph key
                 val formula_string = 
@@ -181,7 +187,7 @@ fun conjectures graph =
     conjectures_in_list graph (Graph.keys graph)
 
 
-fun proof_contraposition original_graph =
+fun proof_contraposition (ProofGraph original_graph) =
     (* first need to be able to get subgraph around a node. *)
     let val get_subgraph = node_subgraph original_graph
          
@@ -216,7 +222,7 @@ fun proof_contraposition original_graph =
                 fun make_node _ =
                     ProofNode 
                         {formula = negated_formula, 
-                         kind = Plain}
+                         kind = ATP_Problem.Plain}
             in       
                 case #kind node of
                     NegatedConjecture => Graph.map_node node_id make_node graph
@@ -226,17 +232,20 @@ fun proof_contraposition original_graph =
         val keys = Graph.keys original_graph
         val redirected_graph = List.foldl node_contraposition Graph.empty keys
     in
-        List.foldl new_node redirected_graph keys
+        ProofGraph (List.foldl new_node redirected_graph keys)
     end
 end
 
 
-structure TSTPFormula: NegatableFormula = 
+structure TSTPFormula: NEGATABLE_FORMULA = 
 struct
 
 type formula = (string, string, string fo_term) ATP_Proof.formula (* this might be ATP_Problem? *)
 
 fun negated_formula formula = AConn(ANot, [formula])
-fun string_for_formula formula = ATP_Problemstring_for_untyped_formula FOF formula
+fun string_for_formula formula = ATP_Problem.string_for_untyped_formula FOF formula
 
 end
+
+
+structure TSTPProofGraph = MakeProofGraph(TSTPFormula)
