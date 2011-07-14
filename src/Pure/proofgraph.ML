@@ -9,6 +9,7 @@ signature NEGATABLE_FORMULA = sig
 
     val negated_formula: formula -> formula
     val string_for_formula: formula -> string
+    val possibly_proof_from_file: (string -> formula ATP_Proof.step list) option
 end
 
 
@@ -20,9 +21,9 @@ signature PROOF_GRAPH = sig
     type proof = formula ATP_Proof.step list
     datatype proof_graph = ProofGraph of proof_node Graph.T
     val proof_to_graph: proof -> proof_graph
-    (* val graph_from_tstp_file: string -> proof_graph *)
     val proof_contraposition: proof_graph -> proof_graph        
     val proof_graph_to_graphviz: proof_graph -> string -> bool -> unit
+    val proof_graph_from_file: string -> proof_graph
 end
 
 
@@ -33,11 +34,6 @@ fun constant_list_of_same_size value lst =
     List.tabulate (length lst, fn _ => value)
     
 fun contains list element = List.exists (fn x => x = element) list
-    
-(* FIND WHERE TO PUT THIS!!
-
- fun graph_from_tstp_file file =
-    ATP_Proof.atp_proof_from_tstp_file "" file |> proof_to_graph *)
 
 fun partition_graph f graph =
     let val keys = Graph.keys graph
@@ -125,6 +121,8 @@ datatype proof_node = ProofNode of {
 
 datatype proof_graph = ProofGraph of proof_node Graph.T
 
+exception ProofFromFileNotDefined
+
 fun add_proof_step_to_graph (inference as ATP_Proof.Inference inf, graph) =
     let val name = #1 (#name inf)
         val graph_with_node = 
@@ -140,6 +138,11 @@ fun add_proof_step_to_graph (inference as ATP_Proof.Inference inf, graph) =
 fun proof_to_graph proof = 
     ProofGraph (List.foldl add_proof_step_to_graph Graph.empty proof);
 
+fun proof_graph_from_file proof_location =
+    case possibly_proof_from_file of
+        SOME function => function proof_location |> proof_to_graph
+      | NONE => raise ProofFromFileNotDefined
+    
 fun proof_graph_to_graphviz (ProofGraph graph) file_name use_formula_label =
     let fun handle_node_name key = 
             let val (ProofNode node) = Graph.get_node graph key
@@ -244,6 +247,8 @@ type formula = (string, string, string fo_term) ATP_Proof.formula (* this might 
 
 fun negated_formula formula = AConn(ANot, [formula])
 fun string_for_formula formula = ATP_Problem.string_for_untyped_formula FOF formula
+val possibly_proof_from_file = 
+    SOME (fn loc => ATP_Proof.atp_proof_from_tstp_file "" loc)
 
 end
 
