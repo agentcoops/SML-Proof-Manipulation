@@ -24,6 +24,7 @@ signature PROOF_GRAPH = sig
     val proof_contraposition: proof_graph -> proof_graph        
     val proof_graph_to_graphviz: proof_graph -> string -> bool -> unit
     val proof_graph_from_file: string -> proof_graph
+    val proof_start: proof_graph -> 
 end
 
 
@@ -143,6 +144,42 @@ fun proof_graph_from_file proof_location =
         SOME function => function proof_location |> proof_to_graph
       | NONE => raise ProofFromFileNotDefined
     
+fun proof_start proof = 
+    let fun is_undesirable node_id = 
+            let val (ProofNode node) = Graph.get_node proof node_id 
+            in 
+                (case #formula node of 
+                   AAtom (ATerm ("$true", _)) => true
+                 | AConn (ANot, [AAtom (ATerm ("$false", _))]) => true
+                 | _ => false)
+                orelse 
+                (case #kind node of
+                     Conjecture => true
+                   | _ => false)
+            end
+            
+        val undesirables = 
+            Graph.filter_nodes (fn (key, _) => is_undesirable key) proof
+
+        fun desirable id = not (contains undesirables id)
+
+        fun desirable_preds id = List.filter desirable (Graph.imm_preds proof id) 
+                                    
+        fun non_true_conjectures node_ids =
+            let fun folder (id, nodes) = 
+                    if desirable id andalso desirable_preds id = []
+                    then id :: nodes
+                    else nodes
+                val surviving_ids = List.foldl folder [] node_ids
+            in 
+                if (List.rev surviving_ids) = node_ids then
+                    surviving_ids
+                else non_true_conjectures surviving_ids
+            end
+    in
+        (non_true_conjectures (Graph.keys proof), undesirables)
+    end
+
 fun proof_graph_to_graphviz (ProofGraph graph) file_name use_formula_label =
     let fun handle_node_name key = 
             let val (ProofNode node) = Graph.get_node graph key
