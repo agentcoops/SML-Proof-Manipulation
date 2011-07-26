@@ -9,6 +9,7 @@ signature NEGATABLE_FORMULA = sig
 
     val negated_formula: formula -> formula
     val string_for_formula: formula -> string
+    val should_skip: formula -> bool
     val possibly_proof_from_file: (string -> formula ATP_Proof.step list) option
 end
 
@@ -24,7 +25,7 @@ signature PROOF_GRAPH = sig
     val proof_contraposition: proof_graph -> proof_graph        
     val proof_graph_to_graphviz: proof_graph -> string -> bool -> unit
     val proof_graph_from_file: string -> proof_graph
-    val proof_start: proof_graph -> 
+    val get_proof_start: proof_graph -> (key list * key list)
 end
 
 
@@ -35,6 +36,14 @@ fun constant_list_of_same_size value lst =
     List.tabulate (length lst, fn _ => value)
     
 fun contains list element = List.exists (fn x => x = element) list
+
+fun list_to_string lst delimiter =
+    let fun folder (value, accum) = 
+            if not (accum = "") then (accum ^ delimiter ^ value)
+            else value
+    in 
+        List.foldl folder "" lst 
+    end
 
 fun partition_graph f graph =
     let val keys = Graph.keys graph
@@ -143,24 +152,23 @@ fun proof_graph_from_file proof_location =
     case possibly_proof_from_file of
         SOME function => function proof_location |> proof_to_graph
       | NONE => raise ProofFromFileNotDefined
+                      
+
     
-fun proof_start proof = 
+fun get_proof_start (ProofGraph proof) = 
     let fun is_undesirable node_id = 
             let val (ProofNode node) = Graph.get_node proof node_id 
-            in 
-                (case #formula node of 
-                   AAtom (ATerm ("$true", _)) => true
-                 | AConn (ANot, [AAtom (ATerm ("$false", _))]) => true
-                 | _ => false)
-                orelse 
+            in       
                 (case #kind node of
                      Conjecture => true
                    | _ => false)
+                orelse
+                (#formula node |> should_skip)
             end
             
         val undesirables = 
             Graph.filter_nodes (fn (key, _) => is_undesirable key) proof
-
+            
         fun desirable id = not (contains undesirables id)
 
         fun desirable_preds id = List.filter desirable (Graph.imm_preds proof id) 
@@ -284,6 +292,12 @@ type formula = (string, string, string fo_term) ATP_Proof.formula (* this might 
 
 fun negated_formula formula = AConn(ANot, [formula])
 fun string_for_formula formula = ATP_Problem.string_for_untyped_formula FOF formula
+fun should_skip (AAtom (ATerm ("$true", _))) = true
+  | should_skip (AConn (ANot, [AAtom (ATerm ("$false", _))])) = true
+  | should_skip _ = false
+
+
+            
 val possibly_proof_from_file = 
     SOME (fn loc => ATP_Proof.atp_proof_from_tstp_file "" loc)
 

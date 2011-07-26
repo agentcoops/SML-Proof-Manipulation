@@ -10,14 +10,11 @@ signature TISAR = sig
        | Hence of 'a
        | QED
 
-    val proof_graph_to_tisar: proof_graph -> 'a tisar_proof
-    val tisar_to_string: 'a tisar_proof -> string
+    val proof_graph_to_tisar: proof_graph -> string tisar_proof
+    val tisar_to_string: string tisar_proof -> string
 end
 
 structure Tisar: TISAR = struct
-
-
-
 
 datatype 'a tisar_proof =
          Block of 'a tisar_proof * 'a tisar_proof
@@ -27,7 +24,7 @@ datatype 'a tisar_proof =
        | Hence of 'a
        | QED
 
-fun graph_to_tisar proof = 
+fun proof_graph_to_tisar (ProofGraph proof) = 
     let val (proof_start, to_ignore) = get_proof_start proof
 
         fun get_node_string node_id = 

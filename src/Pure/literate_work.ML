@@ -426,7 +426,7 @@ fun get_proof_start proof =
             end
     in
         (non_true_conjectures (Graph.keys proof), undesirables)
-    end            
+    end
 
 (* TISAR! *)
 datatype 'a tisar_proof =
