@@ -18,7 +18,11 @@ signature PROOF_GRAPH = sig
     type formula
     val negated_formula: formula -> formula
                 
-    type proof_node
+    datatype proof_node = ProofNode of {
+         formula: formula,
+         kind: formula_kind
+         (*, justification? *)
+    }
     type proof = formula ATP_Proof.step list
     datatype proof_graph = ProofGraph of proof_node Graph.T
     val proof_to_graph: proof -> proof_graph
@@ -296,8 +300,6 @@ fun should_skip (AAtom (ATerm ("$true", _))) = true
   | should_skip (AConn (ANot, [AAtom (ATerm ("$false", _))])) = true
   | should_skip _ = false
 
-
-            
 val possibly_proof_from_file = 
     SOME (fn loc => ATP_Proof.atp_proof_from_tstp_file "" loc)
 
