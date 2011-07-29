@@ -8,6 +8,10 @@ signature NEGATABLE_FORMULA = sig
     type formula
 
     val negated_formula: formula -> formula
+    val disjunct_formulae: formula list -> formula
+    val is_disjunct: formula -> bool
+    val is_top: formula -> bool
+    val is_bottom: formula -> bool
     val string_for_formula: formula -> string
     val should_skip: formula -> bool
     val possibly_proof_from_file: (string -> formula ATP_Proof.step list) option
@@ -25,11 +29,13 @@ signature PROOF_GRAPH = sig
     }
     type proof = formula ATP_Proof.step list
     datatype proof_graph = ProofGraph of proof_node Graph.T
+
     val proof_to_graph: proof -> proof_graph
     val proof_contraposition: proof_graph -> proof_graph        
     val proof_graph_to_graphviz: proof_graph -> string -> bool -> unit
     val proof_graph_from_file: string -> proof_graph
     val get_proof_start: proof_graph -> (key list * key list)
+    val get_proof_node_formula: proof_node -> formula
 end
 
 
@@ -238,6 +244,7 @@ fun conjectures_in_list graph nodes =
 fun conjectures graph = 
     conjectures_in_list graph (Graph.keys graph)
 
+fun get_proof_node_formula (ProofNode node) = #formula node
 
 fun proof_contraposition (ProofGraph original_graph) =
     (* first need to be able to get subgraph around a node. *)
@@ -263,17 +270,24 @@ fun proof_contraposition (ProofGraph original_graph) =
                                    swap_edges graph_accum plain_id swaps)
                                subgraph
                                plains
-                               |> Graph.reverse_edges reversals
+                      |> Graph.reverse_edges reversals
             in
                 merge_subgraphs swapped_subgraph graph
             end
             
         fun new_node (node_id, graph) =
             let val (ProofNode node) = Graph.get_node graph node_id
-                val negated_formula = #formula node |> negated_formula
+                val formula = #formula node
+                val new_formula = 
+                    if not (is_bottom formula)
+                    then negated_formula formula
+                    else Graph.imm_succs graph node_id 
+                          |> List.map (fn id => Graph.get_node graph id 
+                                                 |> get_proof_node_formula)
+                          |> disjunct_formulae 
                 fun make_node _ =
                     ProofNode 
-                        {formula = negated_formula, 
+                        {formula = new_formula, 
                          kind = ATP_Problem.Plain}
             in       
                 case #kind node of
@@ -294,8 +308,23 @@ struct
 
 type formula = (string, string, string fo_term) ATP_Proof.formula (* this might be ATP_Problem? *)
 
-fun negated_formula formula = AConn(ANot, [formula])
+fun negated_formula formula = ATP_Problem.mk_anot formula
+
+fun disjunct_formulae formulae = AConn (AOr, formulae)
+
+fun is_disjunct (AConn (AOr, _)) = true
+  | is_disjunct _ = false
+
+fun is_bottom (AAtom (ATerm ("$false", _))) = true
+  | is_bottom (AConn (ANot, [AAtom (ATerm ("$true", _))])) = true
+  | is_bottom _ = false
+
+fun is_top (AAtom (ATerm ("$true", _))) = true
+  | is_top (AConn (ANot, [AAtom (ATerm ("$false", _))])) = true
+  | is_top _ = false
+
 fun string_for_formula formula = ATP_Problem.string_for_untyped_formula FOF formula
+
 fun should_skip (AAtom (ATerm ("$true", _))) = true
   | should_skip (AConn (ANot, [AAtom (ATerm ("$false", _))])) = true
   | should_skip _ = false

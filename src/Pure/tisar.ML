@@ -25,7 +25,6 @@ datatype 'a tisar_proof =
        | Assume of 'a
        | Hence of 'a
        | QED
-       | Start
 
 (* Need to be able to do fast lookups on dependencies... *)
 structure Set = Linear_Set(type key = string val ord = fast_string_ord);
@@ -72,6 +71,15 @@ fun proof_graph_to_tisar_origin (ProofGraph proof) =
 fun proof_graph_to_tisar (ProofGraph proof) = 
     let val (proof_start, to_ignore) = get_proof_start (ProofGraph proof)
 
+        fun is_branch node_id = 
+            let val formula = Graph.get_node proof node_id |> get_proof_node_formula
+            in
+                if (((is_disjunct formula) orelse (is_top formula))
+                    andalso ((Graph.imm_succs proof node_id |> List.length) > 1))
+                then true
+                else false
+            end                    
+                   
         fun handle_node node_id proved = 
             let val children = Graph.imm_succs proof node_id
                 fun is_provable child =
@@ -79,15 +87,12 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                         fun is_not_proven predecessor = 
                             not (Set.defined proved predecessor)
                     in 
-                        not List.exists is_not_proven predecessors
+                        not (List.exists is_not_proven predecessors)
                     end
                 val provable_children = List.filter is_provable children
-
             in
-                (, provable_children)
+                (node_id, provable_children)
             end
-
-
 
         fun proof_graph_to_tisar' proved [] [] tisar_accum_cps = tisar_accum_cps ()
 
