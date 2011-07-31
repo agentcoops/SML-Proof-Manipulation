@@ -10,13 +10,20 @@ signature TISAR = sig
        | Hence of 'a
        | QED
 
+    type proof_graph
+
     val proof_graph_to_tisar: proof_graph -> string tisar_proof
     val tisar_to_string: string tisar_proof -> string
     val proof_graph_to_tisar_string: proof_graph -> string
-
 end
 
-structure Tisar: TISAR = struct
+
+functor MakeTisar(FormulaStruct: NEGATABLE_FORMULA): TISAR = struct
+
+structure FormulaProofGraph = MakeProofGraph(FormulaStruct)
+
+open FormulaStruct
+open FormulaProofGraph
 
 datatype 'a tisar_proof =
          Block of 'a tisar_proof * 'a tisar_proof
@@ -80,6 +87,8 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                 else false
             end                    
                    
+        fun handle_branch node_id = 
+
         fun handle_node node_id proved = 
             let val children = Graph.imm_succs proof node_id
                 fun is_provable child =
@@ -94,7 +103,7 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                 (node_id, provable_children)
             end
 
-        fun proof_graph_to_tisar' proved [] [] tisar_accum_cps = tisar_accum_cps ()
+        fun proof_graph_to_tisar' proved [] [] tisar_accum_cps = tisar_accum_cps QED
 
           | proof_graph_to_tisar' proved [] handle_next tisar_accum_cps =
             proof_graph_to_tisar' proved handle_next [] tisar_accum_cps

@@ -161,9 +161,7 @@ fun proof_to_graph proof =
 fun proof_graph_from_file proof_location =
     case possibly_proof_from_file of
         SOME function => function proof_location |> proof_to_graph
-      | NONE => raise ProofFromFileNotDefined
-                      
-
+      | NONE => raise ProofFromFileNotDefined                  
     
 fun get_proof_start (ProofGraph proof) = 
     let fun is_undesirable node_id = 
