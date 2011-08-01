@@ -19,9 +19,16 @@ end
 
 
 signature PROOF_GRAPH = sig
-    type formula
+    type formula (* need all negatable formula methods *)
     val negated_formula: formula -> formula
-                
+    val disjunct_formulae: formula list -> formula
+    val is_disjunct: formula -> bool
+    val is_top: formula -> bool
+    val is_bottom: formula -> bool
+    val string_for_formula: formula -> string
+    val should_skip: formula -> bool
+    val possibly_proof_from_file: (string -> formula ATP_Proof.step list) option
+             
     datatype proof_node = ProofNode of {
          formula: formula,
          kind: formula_kind

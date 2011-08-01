@@ -18,12 +18,12 @@ signature TISAR = sig
 end
 
 
-functor MakeTisar(FormulaStruct: NEGATABLE_FORMULA): TISAR = struct
+functor MakeTisar(ProofGraphStruct: PROOF_GRAPH): TISAR = struct
 
-structure FormulaProofGraph = MakeProofGraph(FormulaStruct)
+(*structure FormulaProofGraph = MakeProofGraph(FormulaStruct)
 
-open FormulaStruct
-open FormulaProofGraph
+open FormulaStruct*)
+open ProofGraphStruct
 
 datatype 'a tisar_proof =
          Block of 'a tisar_proof * 'a tisar_proof
@@ -124,21 +124,27 @@ fun proof_graph_to_tisar (ProofGraph proof) =
             let val (branch_node, proved2) = 
                     proof_graph_to_tisar' 
                         (Set.insert_after NONE (branch, "") proved)
-                        (get_provable_children branch)
-                        [] [] 
+                        (get_provable_children branch proved)
+                        []
+                        [] 
                         (fn x => Block (Assume (get_node_string branch), x))
             in
-                (proof_graph_to_tisar' proved2 [] [] branches (fn x => Branch (branch_node, x)))
+                proof_graph_to_tisar' 
+                    proved2 
+                    [] 
+                    [] 
+                    branches 
+                    (fn x => Branch (branch_node, x) |> tisar_accum_cps)
             end
 
           | proof_graph_to_tisar' proved [] handle_next branches tisar_accum_cps =
             proof_graph_to_tisar' proved handle_next [] branches tisar_accum_cps
-
-          | proof_graph_to_tisar' 
-                proved (node_id::node_ids) handle_next branches tisar_accum_cps =
+            
+          | proof_graph_to_tisar' proved (node_id :: node_ids) handle_next branches tisar_accum_cps =
             if is_branch node_id then 
                 proof_graph_to_tisar' 
-                    proved node_ids 
+                    proved 
+                    node_ids 
                     handle_next 
                     (node_id :: branches) 
                     tisar_accum_cps
@@ -149,11 +155,11 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                          node_ids 
                          (provable_children @ handle_next)
                          branches
-                         (fn x => tisar_accum_cps (Block (tisar_node, x)))
+                         (fn x => Block (tisar_node, x) |> tisar_accum_cps)
                  end
 
         val (tisar_accum, _) = 
-            proof_graph_to_tisar' Set.empty proof_start [] (fn x => x)
+            proof_graph_to_tisar' Set.empty proof_start [] [] (fn x => x)
     in
         tisar_accum
     end
