@@ -321,7 +321,8 @@ fun is_top (AAtom (ATerm ("$true", _))) = true
   | is_top (AConn (ANot, [AAtom (ATerm ("$false", _))])) = true
   | is_top _ = false
 
-fun string_for_formula formula = ATP_Problem.string_for_untyped_formula FOF formula
+fun string_for_formula formula = 
+    ATP_Problem.string_for_untyped_formula FOF formula
 
 fun should_skip (AAtom (ATerm ("$true", _))) = true
   | should_skip (AConn (ANot, [AAtom (ATerm ("$false", _))])) = true
