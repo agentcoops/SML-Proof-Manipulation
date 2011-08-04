@@ -16,6 +16,7 @@ sig
   val defined: 'a T -> key -> bool
   val lookup: 'a T -> key -> 'a option
   val update: key * 'a -> 'a T -> 'a T
+  val merge: (('a * key option) * ('a  * key option) -> bool) -> 'a T * 'a T -> 'a T
   val fold: key option ->
     ((key option * key) * 'a -> 'b -> 'b) -> 'a T -> 'b -> 'b
   val get_first: key option ->
@@ -137,6 +138,11 @@ fun delete_after hook set = set |> map_set (fn (start, entries) =>
               |> put_entry (key1, (x1, next_entry entries key2))
               |> del_entry key2;
           in (start, entries') end)));
+
+(* Utilities *)
+fun merge f (Set set1, Set set2) = 
+    Set {start = (#start set1), 
+         entries = (Table.merge f (#entries set1, #entries set2))}
 
 end;
 

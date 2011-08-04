@@ -104,7 +104,7 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                         not (List.exists is_not_proven predecessors)
                     end
             in
-                List.filter is_provable children
+                List.partition is_provable children
             end
 
         fun handle_node node_id proved = 
@@ -113,53 +113,97 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                     if (Graph.imm_preds proof node_id |> List.length) = 0 
                     then Have [node_string]
                     else Hence node_string
+                val (provable, unprovable) = get_provable_children node_id proved
             in
-                (node, get_provable_children node_id proved)
+                (node, provable, unprovable)
             end
 
-        (* args are: proved working_set todo_next branches accum_continuation *)
-        fun proof_graph_to_tisar' proved [] [] [] tisar_accum_cps = (tisar_accum_cps End, proved)
+        fun handle_branch node_id proved =
+            let val proved' = (Set.insert_after NONE (node_id, "") proved) handle DUPLICATE => proved
+                val branches = Graph.imm_succs proof node_id
+                               
+                fun folder (branch, (cont, proved_accum, unproved_accum)) = 
+                    let val (provable, unprovable) = (get_provable_children branch proved)
+                        val (branch_node, proved'', unproved') =
+                            proof_graph_to_tisar'
+                                ((Set.insert_after NONE (branch, "") proved') 
+                                 handle DUPLICATE => proved)
+                                (unprovable @ unproved_accum)
+                                provable
+                                []
+                                []
+                                (fn x => Block (Assume branch, x))
+                    in
+                        (fn x => Branch (branch_node, x) |> cont, proved'' :: proved_accum, unproved')
+                    end
 
-          | proof_graph_to_tisar' proved [] [] (branch :: branches) tisar_accum_cps =
-            let val (branch_node, proved2) = 
-                    proof_graph_to_tisar' 
-                        (Set.insert_after NONE (branch, "") proved)
-                        (get_provable_children branch proved)
-                        []
-                        [] 
-                        (fn x => Block (Assume (get_node_string branch), x))
+                val (branch_nodes, proved_accum, unproved) = 
+                    (List.foldl folder (fn x => x, [], [])  branches)
+                val proved = 
+                    List.foldl (fn (proved', accum) => Set.merge (=) (proved', accum)) 
+                               Set.empty 
+                               proved_accum
+            in
+                (fn x => 
+                    Block (Have [get_node_string node_id], 
+                           Block (branch_nodes End, x)),
+                 proved,
+                 unproved)
+            end
+            
+        (* args are: proved unproved working_set todo_next branches accum_continuation *)
+        and proof_graph_to_tisar' 
+                proved unproved [] [] [] tisar_accum_cps = 
+            (tisar_accum_cps End, 
+             proved, 
+             List.filter (fn x => not (Set.defined proved x)) unproved)
+
+          | proof_graph_to_tisar' proved unproved [] [] (branch :: branches) tisar_accum_cps =
+            let val (node, proved', unprovable) = handle_branch branch proved
+                val remaining = 
+                    List.filter 
+                        (fn x => 
+                            List.all (Set.defined proved') 
+                                     (Graph.imm_preds proof x))
+                        unprovable
+                val _ = PolyML.makestring remaining |> writeln
             in
                 proof_graph_to_tisar' 
-                    proved2 
-                    [] 
-                    [] 
-                    branches 
-                    (fn x => Branch (branch_node, x) |> tisar_accum_cps)
+                    proved'
+                    (unprovable @ unproved)
+                    remaining
+                    []
+                    branches
+                    (fn x => node x |> tisar_accum_cps)
             end
 
-          | proof_graph_to_tisar' proved [] handle_next branches tisar_accum_cps =
-            proof_graph_to_tisar' proved handle_next [] branches tisar_accum_cps
+          | proof_graph_to_tisar' proved unproved [] handle_next branches tisar_accum_cps =
+            proof_graph_to_tisar' proved unproved handle_next [] branches tisar_accum_cps
             
-          | proof_graph_to_tisar' proved (node_id :: node_ids) handle_next branches tisar_accum_cps =
+          | proof_graph_to_tisar' 
+                proved unproved (node_id :: node_ids) 
+                handle_next branches tisar_accum_cps =
             if is_branch node_id then 
                 proof_graph_to_tisar' 
                     proved 
+                    unproved
                     node_ids 
                     handle_next 
                     (node_id :: branches) 
                     tisar_accum_cps
-            else let val (tisar_node, provable_children) = handle_node node_id proved
+            else let val (tisar_node, provable_children, more_unproved) = handle_node node_id proved
                  in
                      proof_graph_to_tisar' 
-                         (Set.insert_after NONE (node_id, "") proved)
+                         ((Set.insert_after NONE (node_id, "") proved) handle DUPLICATE => proved)
+                         unproved
                          node_ids 
                          (provable_children @ handle_next)
                          branches
                          (fn x => Block (tisar_node, x) |> tisar_accum_cps)
                  end
 
-        val (tisar_accum, _) = 
-            proof_graph_to_tisar' Set.empty proof_start [] [] (fn x => x)
+        val (tisar_accum, _, _) = 
+            proof_graph_to_tisar' Set.empty [] proof_start [] [] (fn x => x)
     in
         tisar_accum
     end
@@ -178,7 +222,7 @@ fun tisar_to_string value =
                  | Have lst => 
                    indentation ^ "Have " ^ (list_to_string lst " or ")
                  | Block (first, rest) =>
-                   tisar_to_string' indent first ^ tisar_to_string' indent rest
+                   tisar_to_string' indent first ^ "\n" ^ tisar_to_string' indent rest
                  | Branch (left, right) =>
                    indentation ^ "\n{ " ^ tisar_to_string' (indent + 1) left 
                    ^ " }\nmoreover\n" ^ indentation ^ "{ " 
@@ -192,3 +236,5 @@ fun proof_graph_to_tisar_string proof_graph =
     proof_graph_to_tisar proof_graph |> tisar_to_string 
 
 end
+
+structure TSTPTisar = MakeTisar(TSTPProofGraph);
