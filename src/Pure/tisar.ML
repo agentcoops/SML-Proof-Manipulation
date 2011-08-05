@@ -2,10 +2,11 @@
    representation, proofs. *)
 
 signature TISAR = sig
+    
     datatype 'a tisar_proof =
          Block of 'a tisar_proof * 'a tisar_proof
-       | Branch of 'a tisar_proof * 'a tisar_proof
-       | Have of 'a list
+       | Branch of 'a tisar_proof * 'a tisar_proof * ('a list * 'a list)
+       | Have of 'a list * 'a list
        | Assume of 'a
        | Hence of 'a
        | End
@@ -27,8 +28,8 @@ open ProofGraphStruct
 
 datatype 'a tisar_proof =
          Block of 'a tisar_proof * 'a tisar_proof
-       | Branch of 'a tisar_proof * 'a tisar_proof
-       | Have of 'a list
+       | Branch of 'a tisar_proof * 'a tisar_proof * ('a list * 'a list)
+       | Have of 'a list * 'a list
        | Assume of 'a
        | Hence of 'a
        | End
@@ -36,7 +37,7 @@ datatype 'a tisar_proof =
 (* Need to be able to do fast lookups on dependencies... *)
 structure Set = Linear_Set(type key = string val ord = fast_string_ord);
 
-fun proof_graph_to_tisar_origin (ProofGraph proof) = 
+(* fun proof_graph_to_tisar_origin (ProofGraph proof) = 
     let val (proof_start, to_ignore) = get_proof_start (ProofGraph proof)
 
         fun get_node_string node_id = 
@@ -70,7 +71,7 @@ fun proof_graph_to_tisar_origin (ProofGraph proof) =
           | handle_nodes nodes = handle_branching nodes
     in
         handle_nodes proof_start
-    end
+    end *)
 
 
 (* CPS-style implementation of tisar.
@@ -94,25 +95,28 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                  | _ => node_id
             end
 
-        fun get_provable_children node_id proved =
-            let val children = Graph.imm_succs proof node_id
-                fun is_provable child =
-                    let val predecessors = Graph.imm_preds proof child
-                        fun is_not_proven predecessor = 
-                            not (Set.defined proved predecessor)
-                    in 
-                        not (List.exists is_not_proven predecessors)
-                    end
+        fun provable_subset proved nodes =
+            let fun is_provable child =
+                    Graph.imm_preds proof child 
+                      |> List.all (Set.defined proved) 
             in
-                List.partition is_provable children
+                List.partition is_provable nodes
             end
+
+        fun get_provable_children node_id proved =
+            Graph.imm_succs proof node_id
+              |> provable_subset proved
+
+        val get_preds = Graph.imm_preds proof
+        val get_succs = Graph.imm_succs proof
 
         fun handle_node node_id proved = 
             let val node_string = get_node_string node_id
+                val preds = get_preds node_id
                 val node = 
-                    if (Graph.imm_preds proof node_id |> List.length) = 0 
-                    then Have [node_string]
-                    else Hence node_string
+                    if (List.length preds) = 0 
+                    then Have ([node_string], [])
+                    else Have ([node_string], preds) (*Hence node_string no hence yet!*)
                 val (provable, unprovable) = get_provable_children node_id proved
             in
                 (node, provable, unprovable)
@@ -120,35 +124,40 @@ fun proof_graph_to_tisar (ProofGraph proof) =
 
         fun handle_branch node_id proved =
             let val proved' = (Set.insert_after NONE (node_id, "") proved) handle DUPLICATE => proved
-                val branches = Graph.imm_succs proof node_id
+                val branches = get_succs node_id
                                
-                fun folder (branch, (cont, proved_accum, unproved_accum)) = 
-                    let val (provable, unprovable) = (get_provable_children branch proved)
-                        val (branch_node, proved'', unproved') =
-                            proof_graph_to_tisar'
-                                ((Set.insert_after NONE (branch, "") proved') 
-                                 handle DUPLICATE => proved)
-                                (unprovable @ unproved_accum)
-                                provable
-                                []
-                                []
-                                (fn x => Block (Assume branch, x))
+                fun make_branch root_id = 
+                    let val (provable, unprovable) = get_provable_children root_id proved
                     in
-                        (fn x => Branch (branch_node, x) |> cont, proved'' :: proved_accum, unproved')
+                        proof_graph_to_tisar'
+                            ((Set.insert_after NONE (root_id, "") proved') 
+                             handle DUPLICATE => proved)
+                            unprovable
+                            provable
+                            []
+                            []
+                            (fn x => Block (Assume root_id, x))
                     end
 
-                val (branch_nodes, proved_accum, unproved) = 
-                    (List.foldl folder (fn x => x, [], [])  branches)
-                val proved = 
-                    List.foldl (fn (proved', accum) => Set.merge (=) (proved', accum)) 
-                               Set.empty 
-                               proved_accum
+                val (left_branch, left_proved, left_unproved) = 
+                    List.nth (branches, 0) |> make_branch
+                val (right_branch, right_proved, right_unproved) = 
+                    List.nth (branches, 1) |> make_branch
+                val proved'' = Set.merge (=) (left_proved, right_proved)
+                val unproved = left_unproved @ right_unproved
+                val (subset, fails) = provable_subset proved'' unproved
+                val ultimately = List.hd subset
+                val deps = get_preds ultimately
             in
                 (fn x => 
-                    Block (Have [get_node_string node_id], 
-                           Block (branch_nodes End, x)),
-                 proved,
-                 unproved)
+                    Block (Have ([get_node_string node_id], []), 
+                           Block (Branch (left_branch, 
+                                          right_branch, 
+                                          ([ultimately], deps)), 
+                                  x)),
+                 ((Set.insert_after NONE (ultimately, "") proved'') 
+                  handle DUPLICATE => proved''),
+                 fails)
             end
             
         (* args are: proved unproved working_set todo_next branches accum_continuation *)
@@ -229,14 +238,18 @@ fun tisar_to_string value =
                    End => ""
                  | Assume x => "Assume " ^ x 
                  | Hence x => "\n" ^ indentation ^ " Hence " ^ x 
-                 | Have lst => 
-                   indentation ^ "Have " ^ (list_to_string lst " or ")
+                 | Have (things, []) => ""
+                 | Have (things, deps) => 
+                   indentation ^ "Have " ^ (list_to_string things " or ") ^ 
+                   " by " ^ (list_to_string deps " and ")
                  | Block (first, rest) =>
                    tisar_to_string' indent first ^ "\n" ^ tisar_to_string' indent rest
-                 | Branch (left, right) =>
+                 | Branch (left, right, (conclude, by)) =>
                    indentation ^ "\n{ " ^ tisar_to_string' (indent + 1) left 
                    ^ " } moreover {\n " ^ indentation 
                    ^ tisar_to_string' (indent + 1) right ^ " }\n"
+                   ^ "ultimately have " ^ (list_to_string conclude " or ") ^ " by " 
+                   ^ (list_to_string by " and ") ^ "\n"
             end
     in
         tisar_to_string' 0 value
