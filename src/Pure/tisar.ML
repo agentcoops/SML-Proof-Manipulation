@@ -5,7 +5,7 @@ signature TISAR = sig
     
     datatype 'a tisar_proof =
          Block of 'a tisar_proof * 'a tisar_proof
-       | Branch of 'a tisar_proof * 'a tisar_proof * ('a list * 'a list)
+       | Branch of 'a tisar_proof list * ('a list * 'a list)
        | Have of 'a list * 'a list
        | Assume of 'a
        | Hence of 'a
@@ -28,7 +28,7 @@ open ProofGraphStruct
 
 datatype 'a tisar_proof =
          Block of 'a tisar_proof * 'a tisar_proof
-       | Branch of 'a tisar_proof * 'a tisar_proof * ('a list * 'a list)
+       | Branch of 'a tisar_proof list * ('a list * 'a list)
        | Have of 'a list * 'a list
        | Assume of 'a
        | Hence of 'a
@@ -155,17 +155,21 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                          proved'',
                          unproved)
                     end
-
-                val (left_branch, left_proved, conclusion) = 
-                    List.nth (branches, 0) |> make_branch
-                val (right_branch, right_proved, _) = 
-                    List.nth (branches, 1) |> make_branch
-                val proved'' = Set.merge (=) (left_proved, right_proved)
+                        
+                fun make_branches (branch_id, (branches, proved, _)) = 
+                    let val (branch, branch_proved, unproved) = make_branch branch_id
+                    in
+                        (branch :: branches, 
+                         Set.merge (op =) (branch_proved, proved),
+                         unproved)
+                    end
+                    
+                val (branch_nodes, proved'', conclusion) = 
+                    List.foldl make_branches ([], Set.empty, []) branches
             in
                 (fn x => 
                     Block (Have ([get_node_string node_id], []), 
-                           Block (Branch (left_branch, 
-                                          right_branch, 
+                           Block (Branch (branch_nodes,
                                           (conclusion, [node_id])), 
                                   x)),
                  set_add proved'' (List.hd conclusion),
@@ -214,8 +218,7 @@ fun proof_graph_to_tisar (ProofGraph proof) =
             else let val (tisar_node, provable_children, more_unproved) = 
                          handle_node 
                              node_id 
-                             ((Set.insert_after NONE (node_id, "") proved) 
-                              handle DUPLICATE => proved)
+                             (set_add proved node_id)
                      val (handle_next', tisar_accum_cps') = 
                          if (Set.defined proved node_id) then
                              (handle_next, tisar_accum_cps)
@@ -223,7 +226,7 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                                (fn x => Block (tisar_node, x) |> tisar_accum_cps))
                  in
                      proof_graph_to_tisar' 
-                         ((Set.insert_after NONE (node_id, "") proved) handle DUPLICATE => proved)
+                         (set_add proved node_id)
                          (more_unproved @ unproved)
                          node_ids
                          handle_next'
@@ -238,26 +241,30 @@ fun proof_graph_to_tisar (ProofGraph proof) =
     end
 
 
+
+
 fun tisar_to_string value =
     let fun make_indentation 0 = ""
           | make_indentation x = make_indentation (x-1) ^ " "
                                  
         fun tisar_to_string' indent value = 
             let val indentation = make_indentation indent
+                fun branch_string branch =
+                    "\n{ " ^ tisar_to_string' (indent + 1) branch ^ " }\n"
+                fun moreover lst = list_to_string lst "moreover"
+
             in case value of
                    End => ""
                  | Assume x => "Assume " ^ x 
                  | Hence x => "\n" ^ indentation ^ " Hence " ^ x 
-                 | Have (things, []) => ""
+                 (*| Have (things, []) => ""*)
                  | Have (things, deps) => 
                    indentation ^ "Have " ^ (list_to_string things " or ") ^ 
                    " by " ^ (list_to_string deps " and ")
                  | Block (first, rest) =>
                    tisar_to_string' indent first ^ "\n" ^ tisar_to_string' indent rest
-                 | Branch (left, right, (conclude, by)) =>
-                   indentation ^ "\n{ " ^ tisar_to_string' (indent + 1) left 
-                   ^ " } moreover {\n " ^ indentation 
-                   ^ tisar_to_string' (indent + 1) right ^ " }\n"
+                 | Branch (branches, (conclude, by)) =>
+                   indentation ^ (List.map branch_string branches |> moreover)
                    ^ "ultimately have " ^ (list_to_string conclude " or ") ^ " by " 
                    ^ (list_to_string by " and ") ^ "\n"
             end

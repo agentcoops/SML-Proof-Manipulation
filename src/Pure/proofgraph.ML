@@ -37,6 +37,7 @@ signature PROOF_GRAPH = sig
     type proof = formula ATP_Proof.step list
     datatype proof_graph = ProofGraph of proof_node Graph.T
 
+    val new_graph_id: proof_graph -> int
     val proof_to_graph: proof -> proof_graph
     val proof_contraposition: proof_graph -> proof_graph        
     val proof_graph_to_graphviz: proof_graph -> string -> bool -> unit
@@ -54,6 +55,9 @@ fun constant_list_of_same_size value lst =
     
 fun contains list element = List.exists (fn x => x = element) list
 
+fun max list = 
+    List.foldl (fn (value, max) => if (value > max) then value else max) (List.hd list) list
+
 fun list_to_string lst delimiter =
     let fun folder (value, accum) = 
             if not (accum = "") then (accum ^ delimiter ^ value)
@@ -68,6 +72,7 @@ fun partition_graph f graph =
         List.partition f keys
     end
     
+(* *)
 fun swap_edges graph _ [] = graph
   | swap_edges graph node_id ((node1, node2) :: nodes) =
     let val new_graph = 
@@ -75,11 +80,37 @@ fun swap_edges graph _ [] = graph
                 graph
             else
                 Graph.del_edge (node_id, node1) graph
-                               |> Graph.add_edge (node_id, node2)
+                  |> Graph.add_edge (node_id, node2)
     in 
         swap_edges new_graph node_id nodes
     end
     
+fun swap_edges2 graph node_id ((node1, node2) :: nodes) =
+    let val new_graph = 
+            if node1 = node2 then
+                graph
+            else
+                Graph.del_edge (node1, node2) graph 
+                  |> Graph.add_edge (node_id, node2)
+    in
+        swap_edges new_graph node_id nodes
+    end
+
+fun new_graph_id graph =
+    (Graph.keys graph |> max) + 1
+
+(* this inserts a new node into a graph after an existent node, making all of 
+the original node's decendants now children of the new node. *)
+fun insert_node graph (id, value) prev_id =
+    let val graph_with_node = Graph.new_node (id, value) graph
+        val succs = Graph.imm_succs graph prev_id
+        val old_connections = 
+            ListPair.zip (constant_list_of_same_size prev_id succs,
+                          succs)
+    in
+        swap_edges2 graph id old_connections
+    end
+
 (* the reduce step. naive merging for now. *)
 fun merge_subgraphs sub_graph new_graph = 
     Graph.join (fn _ => fn (left, _) => left) 
@@ -279,24 +310,35 @@ fun proof_contraposition (ProofGraph original_graph) =
             in
                 merge_subgraphs swapped_subgraph graph
             end
-            
-        fun new_node (node_id, graph) =
+
+      fun insert_node graph (id, value) prev_id 
+
+      fun new_node (node_id, graph) =
             let val (ProofNode node) = Graph.get_node graph node_id
                 val formula = #formula node
-                val new_formula = 
-                    if not (is_bottom formula)
-                    then negated_formula formula
-                    else Graph.imm_succs graph node_id 
-                          |> List.map (fn id => Graph.get_node graph id 
-                                                 |> get_proof_node_formula)
+                val new_formula = negated_formula formula
+                val succs = Graph.imm_succs graph node_id
+                val disjunction = 
+                    List.map 
+                        (fn id => Graph.get_node graph id 
+                                    |> get_proof_node_formula)
+                        succs
                           |> disjunct_formulae 
                 fun make_node _ =
                     ProofNode 
                         {formula = new_formula, 
                          kind = ATP_Problem.Plain}
+                fun disjunct_node _ = 
+                    ProofNode 
+                    { formula = disjunction,
+                      kind = ATP_Problem.Plain }
             in       
                 case #kind node of
-                    NegatedConjecture => Graph.map_node node_id make_node graph
+                    NegatedConjecture => 
+                    if (Graph.imm_succs graph node_id |> List.length) > 1
+                    then insert_node graph (node_id, disjunct_node ())
+                    else graph 
+                      |> Graph.map_node node_id make_node graph
                   | _ => graph
             end
             
