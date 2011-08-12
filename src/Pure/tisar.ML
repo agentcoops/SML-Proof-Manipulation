@@ -37,45 +37,7 @@ datatype 'a tisar_proof =
 (* Need to be able to do fast lookups on dependencies... *)
 structure Set = Linear_Set(type key = string val ord = fast_string_ord);
 
-(* fun proof_graph_to_tisar_origin (ProofGraph proof) = 
-    let val (proof_start, to_ignore) = get_proof_start (ProofGraph proof)
-
-        fun get_node_string node_id = 
-            let val (ProofNode node) = Graph.get_node proof node_id
-            in case #kind node of
-                   NegatedConjecture => "~" ^ node_id
-                 | _ => node_id
-            end
-
-        fun handle_id node_id = Graph.imm_succs proof node_id |> handle_nodes
-                       
-        and handle_node node_id = 
-            let val (ProofNode node) = Graph.get_node proof node_id
-                val pred_count = 
-                    Graph.imm_preds proof node_id 
-                                    |> List.filter (fn x => not (contains to_ignore x))
-                                    |> length
-                val node_string = get_node_string node_id
-            in
-                if (pred_count = 0) then (Have [node_string]) 
-                else (Hence node_string)
-            end
-         
-        and handle_branching (node :: []) = 
-            Block (Assume (get_node_string node), handle_id node)
-          | handle_branching (node :: nodes) = 
-            Branch (handle_branching [node], handle_branching nodes)
-            
-        and handle_nodes [] = End
-          | handle_nodes (node :: []) = Block (handle_node node, handle_id node)
-          | handle_nodes nodes = handle_branching nodes
-    in
-        handle_nodes proof_start
-    end *)
-
-
-(* CPS-style implementation of tisar.
-   Previous implementation was woefully inadequate -- an obvious failure... *)
+(* CPS-style implementation of tisar. *)
 fun proof_graph_to_tisar (ProofGraph proof) = 
     let val (proof_start, to_ignore) = get_proof_start (ProofGraph proof)
 
@@ -97,8 +59,13 @@ fun proof_graph_to_tisar (ProofGraph proof) =
 
         fun provable_subset proved nodes =
             let fun is_provable child =
-                    Graph.imm_preds proof child 
-                      |> List.all (Set.defined proved) 
+                    let val preds = Graph.imm_preds proof child 
+                        (*val _ = writeln ("is " ^ child ^ " provable?")
+                        val _ = PolyML.makestring proved |> writeln
+                        val _ = PolyML.makestring preds |> writeln*)
+                    in
+                        List.all (Set.defined proved) preds
+                    end
             in
                 List.partition is_provable nodes
             end
@@ -131,20 +98,19 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                 val branches = get_succs node_id
                                
                 fun common_conclusion unproved proved = 
-                    let val _ = PolyML.makestring proved |> writeln
-                        val preds = List.hd unproved |> get_preds
-                        val _ = PolyML.makestring preds |> writeln
+                    let val preds = List.hd unproved |> get_preds
                         val provable = 
                             List.filter (Set.defined proved) preds
                     in
                         Block (Have (unproved, provable), End)
                     end
-
+                    
                 fun make_branch root_id = 
-                    let val (provable, unprovable) = get_provable_children root_id proved
-                        val (branch, proved'', unproved) = 
+                    let val proved'' = set_add proved' root_id
+                        val (provable, unprovable) = get_provable_children root_id proved''
+                        val (branch, proved''', unproved) = 
                             proof_graph_to_tisar'
-                                (set_add proved' root_id)
+                                proved''
                                 unprovable
                                 provable
                                 []
@@ -168,7 +134,7 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                     List.foldl make_branches ([], Set.empty, []) branches
             in
                 (fn x => 
-                    Block (Have ([get_node_string node_id], []), 
+                    Block (Have ([get_node_string node_id], get_preds node_id), 
                            Block (Branch (branch_nodes,
                                           (conclusion, [node_id])), 
                                   x)),
@@ -184,17 +150,17 @@ fun proof_graph_to_tisar (ProofGraph proof) =
              List.filter (fn x => not (Set.defined proved x)) unproved)
 
           | proof_graph_to_tisar' proved unproved [] [] (branch :: branches) tisar_accum_cps =
-            let val (node, proved', unprovable) = handle_branch branch proved
+            let val (node, proved', conclusion) = handle_branch branch proved
                 val remaining = 
                     List.filter 
                         (fn x => 
                              List.all (Set.defined proved') 
                                       (Graph.imm_preds proof x))
-                        unprovable
+                        (List.map get_succs conclusion |> List.concat)
             in
                 proof_graph_to_tisar' 
                     proved'
-                    (unprovable @ unproved)
+                    (unproved)
                     remaining
                     []
                     branches
@@ -257,7 +223,7 @@ fun tisar_to_string value =
                    End => ""
                  | Assume x => "Assume " ^ x 
                  | Hence x => "\n" ^ indentation ^ " Hence " ^ x 
-                 (*| Have (things, []) => ""*)
+                 | Have (things, []) => ""
                  | Have (things, deps) => 
                    indentation ^ "Have " ^ (list_to_string things " or ") ^ 
                    " by " ^ (list_to_string deps " and ")

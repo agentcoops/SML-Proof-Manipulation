@@ -37,7 +37,7 @@ signature PROOF_GRAPH = sig
     type proof = formula ATP_Proof.step list
     datatype proof_graph = ProofGraph of proof_node Graph.T
 
-    val new_graph_id: proof_graph -> int
+    val new_graph_id: proof_graph -> string
     val proof_to_graph: proof -> proof_graph
     val proof_contraposition: proof_graph -> proof_graph        
     val proof_graph_to_graphviz: proof_graph -> string -> bool -> unit
@@ -55,8 +55,11 @@ fun constant_list_of_same_size value lst =
     
 fun contains list element = List.exists (fn x => x = element) list
 
-fun max list = 
-    List.foldl (fn (value, max) => if (value > max) then value else max) (List.hd list) list
+fun max ord list = 
+    List.foldl (fn (value, max) => if (ord value max) then value else max) (List.hd list) list
+
+fun string_max (lst: string list) = 
+    List.foldl (fn (value, max) => if (value > max) then value else max) (List.hd lst) lst
 
 fun list_to_string lst delimiter =
     let fun folder (value, accum) = 
@@ -85,7 +88,8 @@ fun swap_edges graph _ [] = graph
         swap_edges new_graph node_id nodes
     end
     
-fun swap_edges2 graph node_id ((node1, node2) :: nodes) =
+fun swap_edges2 graph _ [] = graph
+  | swap_edges2 graph node_id ((node1, node2) :: nodes) =
     let val new_graph = 
             if node1 = node2 then
                 graph
@@ -93,22 +97,24 @@ fun swap_edges2 graph node_id ((node1, node2) :: nodes) =
                 Graph.del_edge (node1, node2) graph 
                   |> Graph.add_edge (node_id, node2)
     in
-        swap_edges new_graph node_id nodes
+        swap_edges2 new_graph node_id nodes
     end
 
-fun new_graph_id graph =
-    (Graph.keys graph |> max) + 1
 
 (* this inserts a new node into a graph after an existent node, making all of 
 the original node's decendants now children of the new node. *)
 fun insert_node graph (id, value) prev_id =
-    let val graph_with_node = Graph.new_node (id, value) graph
+    let val graph_with_node = 
+            Graph.new_node (id, value) graph
+              |> Graph.add_edge (prev_id, id)
         val succs = Graph.imm_succs graph prev_id
         val old_connections = 
             ListPair.zip (constant_list_of_same_size prev_id succs,
                           succs)
+        val _ = 
+            PolyML.makestring old_connections |> writeln
     in
-        swap_edges2 graph id old_connections
+        swap_edges2 graph_with_node id old_connections
     end
 
 (* the reduce step. naive merging for now. *)
@@ -180,6 +186,9 @@ datatype proof_node = ProofNode of {
 datatype proof_graph = ProofGraph of proof_node Graph.T
 
 exception ProofFromFileNotDefined
+
+fun new_graph_id (ProofGraph graph) =
+    (Graph.keys graph |> string_max) ^ "-disjunct"
 
 fun add_proof_step_to_graph (inference as ATP_Proof.Inference inf, graph) =
     let val name = #1 (#name inf)
@@ -311,7 +320,7 @@ fun proof_contraposition (ProofGraph original_graph) =
                 merge_subgraphs swapped_subgraph graph
             end
 
-      fun insert_node graph (id, value) prev_id 
+        (* fun insert_node graph (id, value) prev_id = *)
 
       fun new_node (node_id, graph) =
             let val (ProofNode node) = Graph.get_node graph node_id
@@ -335,10 +344,13 @@ fun proof_contraposition (ProofGraph original_graph) =
             in       
                 case #kind node of
                     NegatedConjecture => 
-                    if (Graph.imm_succs graph node_id |> List.length) > 1
-                    then insert_node graph (node_id, disjunct_node ())
-                    else graph 
-                      |> Graph.map_node node_id make_node graph
+                    (if (Graph.imm_succs graph node_id |> List.length) > 1
+                     then insert_node graph 
+                                      (new_graph_id (ProofGraph graph), 
+                                       disjunct_node ()) 
+                                      node_id
+                     else graph) 
+                       |> (writeln "woo"; Graph.map_node node_id make_node)
                   | _ => graph
             end
             
