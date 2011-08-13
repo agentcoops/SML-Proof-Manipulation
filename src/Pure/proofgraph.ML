@@ -111,8 +111,6 @@ fun insert_node graph (id, value) prev_id =
         val old_connections = 
             ListPair.zip (constant_list_of_same_size prev_id succs,
                           succs)
-        val _ = 
-            PolyML.makestring old_connections |> writeln
     in
         swap_edges2 graph_with_node id old_connections
     end
@@ -350,7 +348,7 @@ fun proof_contraposition (ProofGraph original_graph) =
                                        disjunct_node ()) 
                                       node_id
                      else graph) 
-                       |> (writeln "woo"; Graph.map_node node_id make_node)
+                       |> Graph.map_node node_id make_node
                   | _ => graph
             end
             
