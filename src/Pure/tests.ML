@@ -18,6 +18,13 @@ val contra2 = TSTPProofGraph.proof_contraposition simple2;
 val contra_tisar = TSTPTisar.proof_graph_to_tisar contra2;
 TSTPTisar.tisar_to_string contra_tisar |> writeln;
 
+
+val linear = TSTPProofGraph.proof_graph_from_file "../../gallery/crafted/linear/linear.tstp";
+val contra_linear = TSTPProofGraph.proof_contraposition linear;
+val  (TSTPProofGraph.ProofGraph linear_graph) = contra_linear;
+val linear_tisar = TSTPTisar.proof_graph_to_tisar contra_linear;
+TSTPTisar.tisar_to_string linear_tisar |> writeln;
+
 val lasso1 = TSTPProofGraph.proof_graph_from_file "../../gallery/crafted/lasso1/lasso1.tstp";
 val contra_lasso1 = TSTPProofGraph.proof_contraposition lasso1;
 val  (TSTPProofGraph.ProofGraph lasso1_graph) = contra_lasso1;

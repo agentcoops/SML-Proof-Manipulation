@@ -1,6 +1,6 @@
-fof(n0, negated_conjecture, ~0, file('foo', conj)).
-fof(p1, axiom, 1, file('foo', fact1)).
-fof(p2, axiom, 2, file('foo', fact2)).
-fof(n3, negated_conjecture, ~3, inference(unknown, [], [n0, p1])).
-fof(n4, negated_conjecture, ~4, inference(unknown, [], [p2, n3])).
-fof(bot, negated_conjecture, $false, inference(unknown, [], [p1, n4])).
+fof(0, negated_conjecture, ~0, file('foo', conj)).
+fof(1, axiom, 1, file('foo', fact1)).
+fof(2, axiom, 2, file('foo', fact2)).
+fof(3, negated_conjecture, ~3, inference(unknown, [], [0, 1])).
+fof(4, negated_conjecture, ~4, inference(unknown, [], [2, 3])).
+fof(5, negated_conjecture, $false, inference(unknown, [], [1, 4])).

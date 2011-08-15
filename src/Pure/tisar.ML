@@ -25,6 +25,7 @@ functor MakeTisar(ProofGraphStruct: PROOF_GRAPH): TISAR = struct
 
 open FormulaStruct*)
 open ProofGraphStruct
+open Help
 
 datatype 'a tisar_proof =
          Block of 'a tisar_proof * 'a tisar_proof
@@ -33,9 +34,6 @@ datatype 'a tisar_proof =
        | Assume of 'a
        | Hence of 'a
        | End
-
-(* Need to be able to do fast lookups on dependencies... *)
-structure Set = Linear_Set(type key = string val ord = fast_string_ord);
 
 (* CPS-style implementation of tisar. *)
 fun proof_graph_to_tisar (ProofGraph proof) = 
@@ -76,10 +74,6 @@ fun proof_graph_to_tisar (ProofGraph proof) =
 
         val get_preds = Graph.imm_preds proof
         val get_succs = Graph.imm_succs proof
-
-        fun set_add set value = 
-            (Set.insert_after NONE (value, "") set) 
-            handle DUPLICATE => set
 
         fun handle_node node_id proved = 
             let val node_string = get_node_string node_id
@@ -213,12 +207,10 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                  end
                  
         val (tisar_accum, _, _) = 
-            proof_graph_to_tisar' Set.empty [] proof_start [] [] (fn x => x)
+            proof_graph_to_tisar' (set_add_list Set.empty to_ignore) [] proof_start [] [] (fn x => x)
     in
         tisar_accum End
     end
-
-
 
 
 fun tisar_to_string value =

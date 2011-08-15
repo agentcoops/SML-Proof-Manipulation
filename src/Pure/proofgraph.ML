@@ -46,9 +46,18 @@ signature PROOF_GRAPH = sig
     val get_proof_node_formula: proof_node -> formula
 end
 
+(* Need to be able to do fast lookups on dependencies... *)
+structure Set = Linear_Set(type key = string val ord = fast_string_ord);
 
 (* This is my standard library. Just contains various helper functions. *)
 structure Help = struct
+
+fun set_add set value = 
+    (Set.insert_after NONE (value, "") set) 
+    handle DUPLICATE => set
+                        
+fun set_add_list set values = 
+    List.foldl (fn (value, accum) => set_add accum value) set values
 
 fun constant_list_of_same_size value lst = 
     List.tabulate (length lst, fn _ => value)
