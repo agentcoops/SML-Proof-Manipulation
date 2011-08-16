@@ -31,7 +31,8 @@ signature PROOF_GRAPH = sig
              
     datatype proof_node = ProofNode of {
          formula: formula,
-         kind: formula_kind
+         kind: formula_kind,
+         justification_splits: string list list
          (*, justification? *)
     }
     type proof = formula ATP_Proof.step list
@@ -85,17 +86,7 @@ fun partition_graph f graph =
     end
     
 (* *)
-fun swap_edges graph _ [] = graph
-  | swap_edges graph node_id ((node1, node2) :: nodes) =
-    let val new_graph = 
-            if node1 = node2 then 
-                graph
-            else
-                Graph.del_edge (node_id, node1) graph
-                  |> Graph.add_edge (node_id, node2)
-    in 
-        swap_edges new_graph node_id nodes
-    end
+
     
 fun swap_edges2 graph _ [] = graph
   | swap_edges2 graph node_id ((node1, node2) :: nodes) =
@@ -125,9 +116,7 @@ fun insert_node graph (id, value) prev_id =
     end
 
 (* the reduce step. naive merging for now. *)
-fun merge_subgraphs sub_graph new_graph = 
-    Graph.join (fn _ => fn (left, _) => left) 
-               (sub_graph, new_graph)
+
     
 fun node_subgraph graph node = 
     let val surroundings = Graph.imm_preds graph node @ [node]
@@ -136,6 +125,8 @@ fun node_subgraph graph node =
             (fn (key, _) => contains surroundings key) 
             graph
     end
+
+
 
 fun del_edges id ([]) graph = graph
   | del_edges id (node :: nodes) graph = 
@@ -186,7 +177,8 @@ fun dependencies_from_inference (ATP_Proof.Inference inf) =
 
 datatype proof_node = ProofNode of {
          formula: formula,
-         kind: formula_kind
+         kind: formula_kind,
+         justification_splits: string list list
          (*, justification? *)
 }
 
@@ -197,14 +189,51 @@ exception ProofFromFileNotDefined
 fun new_graph_id (ProofGraph graph) =
     (Graph.keys graph |> string_max) ^ "-disjunct"
 
+fun swap_edges graph _ [] = graph
+  | swap_edges graph node_id ((node1, node2) :: nodes) =
+    let fun modify_disjuncts (ProofNode node) = 
+            ProofNode { formula = #formula node, 
+                        kind = #kind node,
+                        justification_splits = 
+                        case (#justification_splits node) of 
+                            [] => [[node_id, node1]]
+                          | hd::tl => ([node_id, node1] @ hd) :: tl}
+        val new_graph = 
+            if node1 = node2 then 
+                graph
+            else
+                Graph.del_edge (node_id, node1) graph
+                  |> Graph.add_edge (node_id, node2)
+                  |> Graph.map_node node2 modify_disjuncts
+    in 
+        swap_edges new_graph node_id nodes
+    end
+
+fun merge_subgraphs sub_graph new_graph = 
+    let fun handle_conflict _ (ProofNode left, ProofNode right) =
+            ProofNode
+                { formula = #formula left,
+                  kind = #kind left,
+                  justification_splits = 
+                  (#justification_splits left) @ (#justification_splits right) }
+    in
+        Graph.join handle_conflict (sub_graph, new_graph)
+    end
+
+(* right now, this won't handle a graph with a disjunction already there...
+   also, really needs to handle the dup case. *)
 fun add_proof_step_to_graph (inference as ATP_Proof.Inference inf, graph) =
     let val name = #1 (#name inf)
+        val dependencies = dependencies_from_inference inference
         val graph_with_node = 
-            Graph.new_node (name, ProofNode {formula = #formula inf, kind = #kind inf})
+            Graph.new_node (name, 
+                            ProofNode {formula = #formula inf, 
+                                       kind = #kind inf,
+                                       justification_splits = []})
                            graph
         val dependencies = dependencies_from_inference inference
         fun add_justification_edge (x, graph) = 
-            Graph.add_edge (x, name) graph     
+            Graph.add_edge (x, name) graph
     in
         List.foldl add_justification_edge graph_with_node dependencies
     end
@@ -342,12 +371,14 @@ fun proof_contraposition (ProofGraph original_graph) =
                           |> disjunct_formulae 
                 fun make_node _ =
                     ProofNode 
-                        {formula = new_formula, 
-                         kind = ATP_Problem.Plain}
+                        { formula = new_formula, 
+                          kind = ATP_Problem.Plain,
+                          justification_splits = #justification_splits node }
                 fun disjunct_node _ = 
                     ProofNode 
                     { formula = disjunction,
-                      kind = ATP_Problem.Plain }
+                      kind = ATP_Problem.Plain,
+                      justification_splits = [] }
             in       
                 case #kind node of
                     NegatedConjecture => 

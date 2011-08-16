@@ -15,6 +15,7 @@ fun debugging_graph (graph: TSTPProofGraph.proof_node T) node =
 (* "tests" *)
 val simple2 = TSTPProofGraph.proof_graph_from_file "simple2.tstp";
 val contra2 = TSTPProofGraph.proof_contraposition simple2;
+val  (TSTPProofGraph.ProofGraph contra_graph) = contra2;
 val contra_tisar = TSTPTisar.proof_graph_to_tisar contra2;
 TSTPTisar.tisar_to_string contra_tisar |> writeln;
 
