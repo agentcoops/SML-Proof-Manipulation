@@ -92,9 +92,12 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                 val branches = get_succs node_id
                                
                 fun common_conclusion unproved proved = 
-                    let val preds = List.hd unproved |> get_preds
-                        val provable = 
-                            List.filter (Set.defined proved) preds
+                    let (* val preds = List.hd unproved |> get_preds (* diab problem? *) *)
+                        val (ProofNode node) = Graph.get_node proof (List.hd unproved)
+                        val (SOME provable) = 
+                            #justification_splits node 
+                     |> List.find (fn just => List.all (Set.defined proved) just)
+                    (*List.filter (Set.defined proved) preds*)
                     in
                         Block (Have (unproved, provable), End)
                     end
@@ -102,12 +105,6 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                 fun make_branch root_id = 
                     let val proved'' = set_add proved' root_id
                         val (provable, unprovable) = get_provable_children root_id proved''
-                        (*val _ = writeln ("For branch from " ^ root_id)
-                        val _ = PolyML.makestring unprovable |> writeln
-                        val _ = List.map (fn x => get_preds x) unprovable 
-                                         |> PolyML.makestring |> writeln
-                        val _ = PolyML.makestring proved'' |> writeln
-                        val _ = PolyML.makestring provable |> writeln *)
                         val _ = writeln ("For branch from " ^ root_id)
                         val (branch, proved''', unproved) = 
                             proof_graph_to_tisar'

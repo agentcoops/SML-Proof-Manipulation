@@ -19,7 +19,6 @@ val  (TSTPProofGraph.ProofGraph contra_graph) = contra2;
 val contra_tisar = TSTPTisar.proof_graph_to_tisar contra2;
 TSTPTisar.tisar_to_string contra_tisar |> writeln;
 
-
 val linear = TSTPProofGraph.proof_graph_from_file "../../gallery/crafted/linear/linear.tstp";
 val contra_linear = TSTPProofGraph.proof_contraposition linear;
 val  (TSTPProofGraph.ProofGraph linear_graph) = contra_linear;
