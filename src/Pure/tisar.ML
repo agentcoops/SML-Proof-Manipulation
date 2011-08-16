@@ -35,6 +35,8 @@ datatype 'a tisar_proof =
        | Hence of 'a
        | End
 
+exception option_deal
+
 (* CPS-style implementation of tisar. *)
 fun proof_graph_to_tisar (ProofGraph proof) = 
     let val (proof_start, to_ignore) = get_proof_start (ProofGraph proof)
@@ -92,12 +94,14 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                 val branches = get_succs node_id
                                
                 fun common_conclusion unproved proved = 
-                    let (* val preds = List.hd unproved |> get_preds (* diab problem? *) *)
-                        val (ProofNode node) = Graph.get_node proof (List.hd unproved)
+                    let val id = List.hd unproved
+                        val (ProofNode node) = Graph.get_node proof id
                         val (SOME provable) = 
-                            #justification_splits node 
-                     |> List.find (fn just => List.all (Set.defined proved) just)
-                    (*List.filter (Set.defined proved) preds*)
+                            case #justification_splits node of
+                                [] => 
+                                SOME (get_preds id |> List.filter (Set.defined proved))
+                              | lst => 
+                                List.find (fn just => List.all (Set.defined proved) just) lst
                     in
                         Block (Have (unproved, provable), End)
                     end
