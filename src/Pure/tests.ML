@@ -38,5 +38,6 @@ TSTPTisar.tisar_to_string lasso2_tisar |> writeln;
 
 val diabolo = TSTPProofGraph.proof_graph_from_file "../../gallery/crafted/diabolo/diabolo.tstp";
 val contra_diabolo = TSTPProofGraph.proof_contraposition diabolo;
+val  (TSTPProofGraph.ProofGraph diabolo_graph) = contra_diabolo;
 val diabolo_tisar = TSTPTisar.proof_graph_to_tisar contra_diabolo;
 TSTPTisar.tisar_to_string diabolo_tisar |> writeln;

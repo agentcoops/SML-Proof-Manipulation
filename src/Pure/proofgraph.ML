@@ -84,10 +84,7 @@ fun partition_graph f graph =
     in 
         List.partition f keys
     end
-    
-(* *)
-
-    
+        
 fun swap_edges2 graph _ [] = graph
   | swap_edges2 graph node_id ((node1, node2) :: nodes) =
     let val new_graph = 
@@ -114,9 +111,6 @@ fun insert_node graph (id, value) prev_id =
     in
         swap_edges2 graph_with_node id old_connections
     end
-
-(* the reduce step. naive merging for now. *)
-
     
 fun node_subgraph graph node = 
     let val surroundings = Graph.imm_preds graph node @ [node]
@@ -125,8 +119,6 @@ fun node_subgraph graph node =
             (fn (key, _) => contains surroundings key) 
             graph
     end
-
-
 
 fun del_edges id ([]) graph = graph
   | del_edges id (node :: nodes) graph = 
@@ -189,15 +181,18 @@ exception ProofFromFileNotDefined
 fun new_graph_id (ProofGraph graph) =
     (Graph.keys graph |> string_max) ^ "-disjunct"
 
+fun disjunct_id ids = list_to_string ids " | "
+
 fun swap_edges graph _ [] = graph
   | swap_edges graph node_id ((node1, node2) :: nodes) =
     let fun modify_disjuncts (ProofNode node) = 
-            ProofNode { formula = #formula node, 
-                        kind = #kind node,
-                        justification_splits = 
-                        case (#justification_splits node) of 
-                            [] => [[node_id, node1]]
-                          | hd::tl => ([node_id, node1] @ hd) :: tl}
+            ProofNode 
+                { formula = #formula node, 
+                  kind = #kind node,
+                  justification_splits = 
+                  case (#justification_splits node) of 
+                      [] => [[node_id, node1]]
+                    | hd::tl => ([node_id, node1] @ hd) :: tl}
         val new_graph = 
             if node1 = node2 then 
                 graph
@@ -381,14 +376,17 @@ fun proof_contraposition (ProofGraph original_graph) =
                       justification_splits = [] }
             in       
                 case #kind node of
-                    NegatedConjecture => 
-                    (if (Graph.imm_succs graph node_id |> List.length) > 1
-                     then insert_node graph 
-                                      (new_graph_id (ProofGraph graph), 
-                                       disjunct_node ()) 
-                                      node_id
-                     else graph) 
-                       |> Graph.map_node node_id make_node
+                    NegatedConjecture =>
+                    let val succs = Graph.imm_succs graph node_id
+                    in
+                        (if (List.length succs > 1)
+                         then insert_node graph 
+                                          (disjunct_id succs, (*new_graph_id (ProofGraph graph), *)
+                                           disjunct_node ()) 
+                                          node_id
+                         else graph) 
+                            |> Graph.map_node node_id make_node
+                    end
                   | _ => graph
             end
             
