@@ -36,6 +36,16 @@ val contra_lasso2 = TSTPProofGraph.proof_contraposition lasso2;
 val lasso2_tisar = TSTPTisar.proof_graph_to_tisar contra_lasso2;
 TSTPTisar.tisar_to_string lasso2_tisar |> writeln;
 
+val cube = TSTPProofGraph.proof_graph_from_file "../../gallery/crafted/cube/cube.tstp";
+val contra_cube = TSTPProofGraph.proof_contraposition cube;
+val  (TSTPProofGraph.ProofGraph cube_graph) = contra_cube;
+val cube_tisar = TSTPTisar.proof_graph_to_tisar contra_cube;
+
+val torch = TSTPProofGraph.proof_graph_from_file "../../gallery/crafted/torch/torch.tstp";
+val contra_torch = TSTPProofGraph.proof_contraposition torch;
+val  (TSTPProofGraph.ProofGraph torch_graph) = contra_torch;
+val torch_tisar = TSTPTisar.proof_graph_to_tisar contra_torch;
+
 val diabolo = TSTPProofGraph.proof_graph_from_file "../../gallery/crafted/diabolo/diabolo.tstp";
 val contra_diabolo = TSTPProofGraph.proof_contraposition diabolo;
 val  (TSTPProofGraph.ProofGraph diabolo_graph) = contra_diabolo;
