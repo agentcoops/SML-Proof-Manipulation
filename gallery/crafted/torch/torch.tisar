@@ -1,0 +1,66 @@
+Naive:
+
+  have 7 | 8
+
+  {
+     assume 7
+     hence 5
+     hence 3 | 4
+
+     {
+        assume 3
+        hence 0 by 1
+     }
+     moreover
+     {
+        assume 4
+        hence 0 by 2
+     }
+     ultimately have 0 by '3 | 4'
+  }
+  moreover
+  {
+     assume 8
+     hence 6
+     hence 3 | 4
+
+     {
+        assume 3
+        hence 0 by 1
+     }
+     moreover
+     {
+        assume 4
+        hence 0 by 2
+     }
+     ultimately have 0 by '3 | 4'
+  }
+  ultimately show 0 by '7 | 8'
+
+Better:
+
+  have 7 | 8
+
+  {
+     assume 7
+     hence 5
+     hence 3 | 4
+  }
+  moreover
+  {
+     assume 8
+     hence 6
+     hence 3 | 4
+  }
+  ultimately have '3 | 4' by '7 | 8'
+
+  {
+     assume 3
+     hence 0 by 1
+  }
+  moreover
+  {
+     assume 4
+     hence 0 by 2
+  }
+  ultimately have 0 by '3 | 4'
