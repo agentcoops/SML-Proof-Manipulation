@@ -1,0 +1,10 @@
+fof(0, negated_conjecture, ~0, file('foo', conj)).
+fof(1, axiom, 1, file('foo', ax1)).
+fof(2, axiom, 2, file('foo', ax2)).
+fof(3, negated_conjecture, ~3, inference(unknown, [], [0, 1])).
+fof(4, negated_conjecture, ~4, inference(unknown, [], [0, 2])).
+fof(5, negated_conjecture, ~5, inference(unknown, [], [3, 4])).
+fof(6, negated_conjecture, ~6, inference(unknown, [], [3, 4])).
+fof(7, negated_conjecture, ~7, inference(unknown, [], [5])).
+fof(8, negated_conjecture, ~8, inference(unknown, [], [6])).
+fof(9, negated_conjecture, $false, inference(unknown, [], [7, 8])).
