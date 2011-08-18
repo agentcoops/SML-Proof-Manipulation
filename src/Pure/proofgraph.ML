@@ -50,13 +50,16 @@ end
 (* Need to be able to do fast lookups on dependencies... *)
 structure Set = Linear_Set(type key = string val ord = fast_string_ord);
 
-(* This is my standard library. Just contains various helper functions. *)
+(* This is my standard library. Just contains various helper functions. 
+
+TODO: switch to ord_list and I don't need all the set methods,
+tabulate replaces constant list... *)
 structure Help = struct
 
 fun set_add set value = 
     (Set.insert_after NONE (value, "") set) 
     handle DUPLICATE => set
-                        
+
 fun set_add_list set values = 
     List.foldl (fn (value, accum) => set_add accum value) set values
 
@@ -102,12 +105,16 @@ fun swap_edges2 graph _ [] = graph
 the original node's decendants now children of the new node. *)
 fun insert_node graph (id, value) prev_id =
     let val graph_with_node = 
-            Graph.new_node (id, value) graph
-              |> Graph.add_edge (prev_id, id)
+            ((Graph.new_node (id, value) graph) handle DUPLICATE => graph)
+                |> Graph.add_edge (prev_id, id)
         val succs = Graph.imm_succs graph prev_id
+        val _ = writeln (PolyML.makestring succs ^ " for " ^ prev_id) 
         val old_connections = 
-            ListPair.zip (constant_list_of_same_size prev_id succs,
-                          succs)
+            ListPair.zip 
+                (constant_list_of_same_size prev_id succs,
+                 succs)
+        val _ = PolyML.makestring old_connections |> writeln 
+        val _ = PolyML.makestring graph_with_node |> writeln 
     in
         swap_edges2 graph_with_node id old_connections
     end
@@ -380,10 +387,11 @@ fun proof_contraposition (ProofGraph original_graph) =
                     let val succs = Graph.imm_succs graph node_id
                     in
                         (if (List.length succs > 1)
-                         then insert_node graph 
-                                          (disjunct_id succs, (*new_graph_id (ProofGraph graph), *)
-                                           disjunct_node ()) 
-                                          node_id
+                         then insert_node 
+                                  graph 
+                                  (disjunct_id (Ord_List.make fast_string_ord succs),
+                                   disjunct_node ()) 
+                                  node_id
                          else graph) 
                             |> Graph.map_node node_id make_node
                     end
