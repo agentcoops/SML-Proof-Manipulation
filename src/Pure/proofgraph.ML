@@ -60,6 +60,8 @@ fun set_add set value =
     (Set.insert_after NONE (value, "") set) 
     handle DUPLICATE => set
 
+fun sort_unique lst = Ord_List.make fast_string_ord lst
+
 fun set_add_list set values = 
     List.foldl (fn (value, accum) => set_add accum value) set values
 
@@ -82,7 +84,25 @@ fun list_to_string lst delimiter =
         List.foldl folder "" lst 
     end
 
-fun disjunct_id ids = list_to_string (Ord_List.make fast_string_ord ids) " | "
+(* This isn't fully generic (ie the included strip behavior isn't
+   sufficient for all cases (in particular where there is whitespace
+   within one of the splits) but it works in my case here! *)
+fun string_split delimiter str = 
+    String.tokens 
+        (fn x => 
+            (SOME x) = (Char.fromString delimiter) 
+            orelse (SOME x) = (Char.fromString " ")) 
+        str
+
+fun disjunct_id ids = list_to_string (sort_unique ids) " | "
+
+(* disjuncts really need to be first class! this is terrible
+desperation to fix this bug today! after gsoc's termination this will
+be cleaned up! *)
+fun merge_disjuncts disjuncts = 
+    List.map (string_split "|") disjuncts
+     |> List.concat
+     |> disjunct_id
 
 fun partition_graph f graph =
     let val keys = Graph.keys graph
