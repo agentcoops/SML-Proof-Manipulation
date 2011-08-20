@@ -1,6 +1,8 @@
 (*  Title:      Pure/General/graph.ML
     Author:     Markus Wenzel and Stefan Berghofer, TU Muenchen
 
+-Cooper: added reverse_edge
+
 Directed graphs.
 *)
 
@@ -41,8 +43,6 @@ sig
   val add_edge: key * key -> 'a T -> 'a T
   val del_edge: key * key -> 'a T -> 'a T
   val reverse_edge: key * key -> 'a T -> 'a T
-  val reverse_edges: (key * key) list -> 'a T -> 'a T
-  val reverse_edges_node: key -> 'a T -> 'a T
   val merge: ('a * 'a -> bool) -> 'a T * 'a T -> 'a T                 (*exception DUP*)
   val join: (key -> 'a * 'a -> 'a) (*exception DUP/SAME*) ->
     'a T * 'a T -> 'a T                                               (*exception DUP*)
@@ -229,19 +229,6 @@ fun reverse_edge (x, y) G =
         G |> map_entry y (fn (i, (preds, succs)) => (i, (remove_key x preds, x :: succs)))
           |> map_entry x (fn (i, (preds, succs)) => (i, (y :: preds, remove_key y succs)))
     else G;
-
-fun reverse_edges [] G = G
-  | reverse_edges ((x, y) :: tl) G = reverse_edge (x, y) G |> reverse_edges tl
-
-fun reverse_edges_node node G = 
-    let val succs = imm_succs G node
-        val preds = imm_preds G node
-        fun constant_list_of_same_size value lst = 
-            List.tabulate (length lst, fn x => value) 
-    in
-        G |> reverse_edges (ListPair.zip (constant_list_of_same_size node succs, succs))
-          |> reverse_edges (ListPair.zip (preds, constant_list_of_same_size node preds))
-    end;
 
 fun diff_edges G1 G2 =
   flat (dest G1 |> map (fn (x, ys) => ys |> map_filter (fn y =>

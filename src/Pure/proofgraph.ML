@@ -90,6 +90,16 @@ fun partition_graph f graph =
         List.partition f keys
     end
         
+(* fun reverse_edges_node node G = 
+    let val succs = imm_succs G node
+        val preds = imm_preds G node
+        fun constant_list_of_same_size value lst = 
+            List.tabulate (length lst, fn x => value) 
+    in
+        G |> reverse_edges (ListPair.zip (constant_list_of_same_size node succs, succs))
+          |> reverse_edges (ListPair.zip (preds, constant_list_of_same_size node preds))
+    end; *)
+
 fun swap_edges2 graph _ [] = graph
   | swap_edges2 graph node_id ((node1, node2) :: nodes) =
     let val new_graph = 
@@ -186,26 +196,38 @@ exception ProofFromFileNotDefined
 fun new_graph_id (ProofGraph graph) =
     (Graph.keys graph |> string_max) ^ "-disjunct"
 
-fun swap_edges graph _ [] = graph
-  | swap_edges graph node_id ((node1, node2) :: nodes) =
-    let fun modify_disjuncts (ProofNode node) = 
+fun modify_disjuncts id addition graph = 
+    Graph.map_node 
+        id 
+        (fn (ProofNode node) =>  
             ProofNode 
                 { formula = #formula node, 
                   kind = #kind node,
                   justification_splits = 
                   case (#justification_splits node) of 
-                      [] => [[node_id, node1]]
-                    | hd::tl => ([node_id, node1] @ hd) :: tl}
-        val new_graph = 
+                      [] => [addition]
+                    | hd::tl => (addition @ hd) :: tl }) 
+        graph
+
+fun swap_edges graph _ [] = graph
+  | swap_edges graph node_id ((node1, node2) :: nodes) =
+    let val new_graph = 
             if node1 = node2 then 
                 graph
             else
                 Graph.del_edge (node_id, node1) graph
                   |> Graph.add_edge (node_id, node2)
-                  |> Graph.map_node node2 modify_disjuncts
+                  |> modify_disjuncts node2 [node1, node2]
     in 
         swap_edges new_graph node_id nodes
     end
+
+fun reverse_edges [] graph = graph
+  | reverse_edges ((node1, node2) :: tl) graph = 
+    if node1 = node2 then graph
+    else modify_disjuncts node1 [node2] graph
+      |> Graph.reverse_edge (node1, node2)
+      |> reverse_edges tl
 
 fun merge_subgraphs sub_graph new_graph = 
     let fun handle_conflict _ (ProofNode left, ProofNode right) =
@@ -349,7 +371,7 @@ fun proof_contraposition (ProofGraph original_graph) =
                                    swap_edges graph_accum plain_id swaps)
                                subgraph
                                plains
-                      |> Graph.reverse_edges reversals
+                      |> reverse_edges reversals
             in
                 merge_subgraphs swapped_subgraph graph
             end

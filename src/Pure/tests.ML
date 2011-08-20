@@ -33,6 +33,7 @@ TSTPTisar.tisar_to_string lasso1_tisar |> writeln;
 
 val lasso2 = TSTPProofGraph.proof_graph_from_file "../../gallery/crafted/lasso2/lasso2.tstp";
 val contra_lasso2 = TSTPProofGraph.proof_contraposition lasso2;
+val  (TSTPProofGraph.ProofGraph lasso2_graph) = contra_lasso2;
 val lasso2_tisar = TSTPTisar.proof_graph_to_tisar contra_lasso2;
 TSTPTisar.tisar_to_string lasso2_tisar |> writeln;
 
