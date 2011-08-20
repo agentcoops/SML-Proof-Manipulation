@@ -82,6 +82,8 @@ fun list_to_string lst delimiter =
         List.foldl folder "" lst 
     end
 
+fun disjunct_id ids = list_to_string (Ord_List.make fast_string_ord ids) " | "
+
 fun partition_graph f graph =
     let val keys = Graph.keys graph
     in 
@@ -108,13 +110,10 @@ fun insert_node graph (id, value) prev_id =
             ((Graph.new_node (id, value) graph) handle DUPLICATE => graph)
                 |> Graph.add_edge (prev_id, id)
         val succs = Graph.imm_succs graph prev_id
-        val _ = writeln (PolyML.makestring succs ^ " for " ^ prev_id) 
         val old_connections = 
             ListPair.zip 
                 (constant_list_of_same_size prev_id succs,
                  succs)
-        val _ = PolyML.makestring old_connections |> writeln 
-        val _ = PolyML.makestring graph_with_node |> writeln 
     in
         swap_edges2 graph_with_node id old_connections
     end
@@ -167,7 +166,6 @@ type proof = formula ATP_Proof.step list
          Axiom | Definition | Lemma | Hypothesis |
          Conjecture | NegatedConjecture | Plain*)
 
-
 fun dependencies_from_inference (ATP_Proof.Inference inf) = 
     (List.map (fn justification => #1 justification |> Int.fromString) 
               (#justification inf))
@@ -187,8 +185,6 @@ exception ProofFromFileNotDefined
 
 fun new_graph_id (ProofGraph graph) =
     (Graph.keys graph |> string_max) ^ "-disjunct"
-
-fun disjunct_id ids = list_to_string ids " | "
 
 fun swap_edges graph _ [] = graph
   | swap_edges graph node_id ((node1, node2) :: nodes) =
@@ -389,7 +385,7 @@ fun proof_contraposition (ProofGraph original_graph) =
                         (if (List.length succs > 1)
                          then insert_node 
                                   graph 
-                                  (disjunct_id (Ord_List.make fast_string_ord succs),
+                                  (disjunct_id succs,
                                    disjunct_node ()) 
                                   node_id
                          else graph) 

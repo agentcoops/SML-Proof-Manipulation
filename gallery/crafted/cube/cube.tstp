@@ -5,4 +5,4 @@ fof(3, negated_conjecture, ~3, inference(unknown, [], [1, 2])).
 fof(4, negated_conjecture, ~4, inference(unknown, [], [0])).
 fof(5, negated_conjecture, ~5, inference(unknown, [], [1, 4])).
 fof(6, negated_conjecture, ~6, inference(unknown, [], [2, 4])).
-fof(7, negated_conjecture, $false, inference(unknown, [], [4, 5, 6])).
+fof(7, negated_conjecture, $false, inference(unknown, [], [3, 5, 6])).

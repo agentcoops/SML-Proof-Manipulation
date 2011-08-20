@@ -56,7 +56,7 @@ Better:
 
   {
     assume 3
-    hence 1 | 2
+    hence 1 | 2  (* need to work on fact that doesn't handle trivial branches! *)
   }
   moreover
   {
@@ -85,3 +85,6 @@ Better:
     hence 0
   }
   ultimately show 0 by '1 | 2 | 4'
+
+(* think I need to remove the insert disjunction step in proof-graph
+generation such that simplification branches can be detected!!! *)

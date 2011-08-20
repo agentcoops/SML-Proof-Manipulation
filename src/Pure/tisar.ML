@@ -94,7 +94,8 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                 val branches = get_succs node_id
                                
                 fun common_conclusion unproved proved = 
-                    let val id = List.hd unproved
+                    let val id = disjunct_id unproved
+                        val _ = PolyML.makestring unproved |> writeln
                         val (ProofNode node) = Graph.get_node proof id
                         val (SOME provable) = 
                             case #justification_splits node of
@@ -102,7 +103,6 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                                 SOME (get_preds id |> List.filter (Set.defined proved))
                               | lst => 
                                 List.find (fn just => List.all (Set.defined proved) just) lst
-                        val _ = PolyML.makestring unproved |> writeln
                     in
                         Block (Have (unproved, provable), End)
                     end
