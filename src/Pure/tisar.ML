@@ -84,13 +84,14 @@ fun proof_graph_to_tisar (ProofGraph proof) =
             end
 
         fun handle_branch node_id proved =
-            let val proved' = set_add proved node_id
+            let val _ =  writeln ("For branch from " ^ node_id)
+                val proved' = set_add proved node_id
                 val branches = get_succs node_id
                                
                 fun common_conclusion unproved proved = 
                     let val id = disjunct_id unproved
-                        val _ = PolyML.makestring unproved |> writeln
-                        val _ = PolyML.makestring proved |> writeln
+                        (* val _ = PolyML.makestring unproved |> writeln
+                        val _ = PolyML.makestring proved |> writeln *)
                         val (ProofNode node) = Graph.get_node proof id
                         val (SOME provable) = 
                             case #justification_splits node of
@@ -106,7 +107,6 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                     if is_provable proved' root_id then
                         let val proved'' = set_add proved' root_id
                             val (provable, unprovable) = get_provable_children root_id proved''
-                            val _ = writeln ("For branch from " ^ root_id) 
                             val (branch, proved''', unproved) = 
                                 proof_graph_to_tisar'
                                     proved''
@@ -115,6 +115,7 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                                     []
                                     []
                                     (fn x => Block (Assume root_id, x))
+                            val _ = PolyML.makestring unproved |> writeln
                         in
                             (common_conclusion unproved proved''' |> branch |> SOME,
                              proved'',
@@ -130,51 +131,64 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                          unproved' @ unproved)
                     end
                     
-                val (branch_nodes, proved'', conclusion) = 
+                val (possible_branch_nodes, proved'', conclusion) = 
                     List.foldl make_branches ([], Set.empty, []) branches
-                val _ = merge_disjuncts conclusion |> writeln
+                val branch_nodes = List.mapPartial I possible_branch_nodes
             in
-                (fn x => 
-                    (Block (Branch (List.mapPartial I branch_nodes,
-                                   (sort_unique conclusion, [node_id])),
-                           x))
-                        |> (if Set.defined proved node_id then I 
-                            else (fn x => 
-                                     Block (Have ([get_node_string node_id], 
-                                                  get_preds node_id), 
-                                            x))),
-                 set_add proved'' (merge_disjuncts conclusion),
-                 conclusion)
+                case branch_nodes of
+                    [] => (NONE, proved, node_id)
+                  | nodes =>
+                    (SOME (fn x => 
+                              (Block (Branch (nodes,
+                                              (sort_unique conclusion, [node_id])),
+                                      x))
+                                  |> (if Set.defined proved node_id then I 
+                                      else (fn x => 
+                                               Block (Have ([get_node_string node_id], 
+                                                            get_preds node_id), 
+                                                      x)))),
+                     set_add proved'' (merge_disjuncts conclusion),
+                     merge_disjuncts conclusion)
             end
             
         (* args are: proved unproved working_set todo_next branches accum_continuation *)
         and proof_graph_to_tisar' 
                 proved unproved [] [] [] tisar_accum_cps = 
-            (tisar_accum_cps, 
-             proved, 
-             List.filter (fn x => not (Set.defined proved x)) unproved)
+            (PolyML.makestring unproved |> writeln;
+             (tisar_accum_cps, 
+              proved, 
+              List.filter (fn x => not (Set.defined proved x)) unproved))
            
           | proof_graph_to_tisar' proved unproved [] [] (branch :: branches) tisar_accum_cps =
             let val (node, proved', conclusion) = handle_branch branch proved
                 val (remaining, new_branches) = 
-                    if is_branch (merge_disjuncts conclusion) then 
-                        ([], (merge_disjuncts conclusion) :: branches)
+                    if is_branch conclusion then 
+                        ([], conclusion :: branches)
                     else
                         (List.filter 
                              (fn x => 
                                  List.all (Set.defined proved') 
                                           (Graph.imm_preds proof x))
-                             (List.map get_succs conclusion |> List.concat),
+                             (get_succs conclusion),
                          branches)
             in
-                (PolyML.makestring new_branches |> writeln;
-                proof_graph_to_tisar' 
-                    proved'
-                    (unproved)
-                    remaining
-                    []
-                    new_branches
-                    (fn x => node x |> tisar_accum_cps))
+                case node of
+                    SOME branch_tisar =>
+                    proof_graph_to_tisar' 
+                        proved'
+                        unproved
+                        remaining
+                        []
+                        new_branches
+                        (fn x => branch_tisar x |> tisar_accum_cps)
+                  | NONE =>
+                    proof_graph_to_tisar'
+                        proved'
+                        (branch :: unproved)
+                        remaining
+                        []
+                        branches
+                        tisar_accum_cps
             end
 
           | proof_graph_to_tisar' proved unproved [] handle_next branches tisar_accum_cps =
