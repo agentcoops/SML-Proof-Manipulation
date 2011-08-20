@@ -3,15 +3,6 @@ use "ROOT.ML"; (* load the necessary isabelle environment. *)
 use "proofgraph.ML"; (* load proofgraph. *)
 use "tisar.ML"; (* load all of the tisar code *)
 
-(* helper methods *)
-fun debugging_graph (graph: TSTPProofGraph.proof_node T) node =
-    let val thing = Graph.get_node graph node
-    in
-        (writeln ("graph: " ^ (thing |> PolyML.makestring));
-         writeln ("preds: " ^ (Graph.imm_preds graph node |> PolyML.makestring));
-         writeln ("succs: " ^ (Graph.imm_succs graph node |> PolyML.makestring)))
-    end
-
 (* "tests" *)
 val simple2 = TSTPProofGraph.proof_graph_from_file "simple2.tstp";
 val contra2 = TSTPProofGraph.proof_contraposition simple2;

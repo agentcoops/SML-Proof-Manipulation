@@ -217,7 +217,7 @@ fun swap_edges graph _ [] = graph
             else
                 Graph.del_edge (node_id, node1) graph
                   |> Graph.add_edge (node_id, node2)
-                  |> modify_disjuncts node2 [node1, node2]
+                  |> modify_disjuncts node2 [node_id, node1]
     in 
         swap_edges new_graph node_id nodes
     end
@@ -458,3 +458,12 @@ end
 
 
 structure TSTPProofGraph = MakeProofGraph(TSTPFormula)
+
+(* helper methods *)
+fun debugging_graph (graph: TSTPProofGraph.proof_node T) node =
+    let val thing = Graph.get_node graph node
+    in
+        (writeln ("graph: " ^ (thing |> PolyML.makestring));
+         writeln ("preds: " ^ (Graph.imm_preds graph node |> PolyML.makestring));
+         writeln ("succs: " ^ (Graph.imm_succs graph node |> PolyML.makestring)))
+    end

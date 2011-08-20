@@ -96,6 +96,7 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                 fun common_conclusion unproved proved = 
                     let val id = disjunct_id unproved
                         val _ = PolyML.makestring unproved |> writeln
+                        val _ = PolyML.makestring proved |> writeln
                         val (ProofNode node) = Graph.get_node proof id
                         val (SOME provable) = 
                             case #justification_splits node of
@@ -208,7 +209,13 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                  end
                  
         val (tisar_accum, _, _) = 
-            proof_graph_to_tisar' (set_add_list Set.empty to_ignore) [] proof_start [] [] (fn x => x)
+            proof_graph_to_tisar' 
+                (set_add_list Set.empty to_ignore) 
+                [] 
+                proof_start 
+                [] 
+                [] 
+                (fn x => x)
     in
         tisar_accum End
     end
@@ -221,8 +228,8 @@ fun tisar_to_string value =
         fun tisar_to_string' indent value = 
             let val indentation = make_indentation indent
                 fun branch_string branch =
-                    "\n{ " ^ tisar_to_string' (indent + 1) branch ^ " }\n"
-                fun moreover lst = list_to_string lst "moreover"
+                    "{ " ^ tisar_to_string' (indent + 1) branch ^ " }\n"
+                fun moreover lst = list_to_string lst "moreover\n"
 
             in case value of
                    End => ""
@@ -237,7 +244,7 @@ fun tisar_to_string value =
                  | Branch (branches, (conclude, by)) =>
                    indentation ^ (List.map branch_string branches |> moreover)
                    ^ "ultimately have " ^ (list_to_string conclude " or ") ^ " by " 
-                   ^ (list_to_string by " and ") ^ "\n"
+                   ^ (list_to_string by " and ")
             end
     in
         tisar_to_string' 0 value
