@@ -44,6 +44,7 @@ val contra_cube = TSTPProofGraph.proof_contraposition cube;
 val  (TSTPProofGraph.ProofGraph cube_graph) = contra_cube;
 TSTPProofGraph.proof_graph_to_graphviz contra_cube "cube.gv" false;
 val cube_tisar = TSTPTisar.proof_graph_to_tisar contra_cube;
+TSTPTisar.tisar_to_string cube_tisar |> writeln;
 
 val diabolo = TSTPProofGraph.proof_graph_from_file "../../gallery/crafted/diabolo/diabolo.tstp";
 val contra_diabolo = TSTPProofGraph.proof_contraposition diabolo;

@@ -115,39 +115,46 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                         val (possible_branch_nodes, proved'', conclusion) = 
                             List.foldl make_branches ([], Set.empty, []) branches
                         val branch_nodes = List.mapPartial I possible_branch_nodes
+                        val conclusion_node = merge_disjuncts conclusion
+                        val proof' = 
+                            insert_disjunct_after 
+                                proof 
+                                conclusion 
+                                (List.map (fn x => get_succs proof x) conclusion |> List.concat)
                     in
                         case branch_nodes of
-                            [] => (NONE, proved, node_id)
+                            [] => (NONE, proved, node_id, proof)
                           | nodes =>
                             (SOME (fn x => 
                                       (Block (Branch (nodes,
-                                                      (sort_unique conclusion, [node_id])),
+                                                      ([conclusion_node], [node_id])),
                                               x))
                                           |> (if Set.defined proved node_id then I 
                                               else (fn x => 
                                                        Block (Have ([get_node_string proof node_id], 
                                                                     get_preds proof node_id), 
                                                               x)))),
-                             set_add proved'' (merge_disjuncts conclusion),
-                             merge_disjuncts conclusion)
+                             set_add proved'' conclusion_node,
+                             conclusion_node, 
+                             proof')
                     end
 
-                val (node, proved', conclusion) = handle_branch branch proved
+                val (node, proved', conclusion, proof') = handle_branch branch proved
                 val (remaining, new_branches) = 
-                    if is_branch proof conclusion then 
+                    if is_branch proof' conclusion then 
                         ([], conclusion :: branches)
                     else
                         (List.filter 
                              (fn x => 
                                  List.all (Set.defined proved') 
-                                          (Graph.imm_preds proof x))
-                             (get_succs proof conclusion),
+                                          (Graph.imm_preds proof' x))
+                             (get_succs proof' conclusion),
                          branches)
             in
                 case node of
                     SOME branch_tisar =>
                     proof_graph_to_tisar' 
-                        proof
+                        proof'
                         proved'
                         unproved
                         remaining
@@ -156,7 +163,7 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                         (fn x => branch_tisar x |> tisar_accum_cps)
                   | NONE =>
                     proof_graph_to_tisar'
-                        proof
+                        proof'
                         proved'
                         (branch :: unproved)
                         remaining

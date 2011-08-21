@@ -47,6 +47,7 @@ signature PROOF_GRAPH = sig
     val get_proof_node_formula: proof_node -> formula
     val is_branch: proof_node Graph.T -> key -> bool
     val get_node_string: proof_node Graph.T -> key -> string
+    val insert_disjunct_after: proof_node Graph.T -> key list -> key list -> proof_node Graph.T
 end
 
 (* Need to be able to do fast lookups on dependencies... *)
@@ -197,7 +198,6 @@ type proof = formula ATP_Proof.step list
 (*datatype formula_kind = 
          Axiom | Definition | Lemma | Hypothesis |
          Conjecture | NegatedConjecture | Plain*)
-
     
 fun dependencies_from_inference (ATP_Proof.Inference inf) = 
     (List.map (fn justification => #1 justification |> Int.fromString) 
@@ -263,6 +263,8 @@ fun merge_subgraphs sub_graph new_graph =
         Graph.join handle_conflict (sub_graph, new_graph)
     end
 
+
+
 (* right now, this won't handle a graph with a disjunction already there...
    also, really needs to handle the dup case. *)
 fun add_proof_step_to_graph (inference as ATP_Proof.Inference inf, graph) =
@@ -322,6 +324,8 @@ fun get_proof_start (ProofGraph proof) =
         (non_true_conjectures (Graph.keys proof), undesirables)
     end
 
+
+
 fun proof_graph_to_graphviz (ProofGraph graph) file_name use_formula_label =
     let fun handle_node_name key = 
             let val (ProofNode node) = Graph.get_node graph key
@@ -370,6 +374,27 @@ fun conjectures graph =
 
 fun get_proof_node_formula (ProofNode node) = #formula node
 
+fun insert_disjunct_after graph origins disjunctions = 
+    let val disjunction = 
+            List.map 
+                (fn id => Graph.get_node graph id 
+                            |> get_proof_node_formula)
+                disjunctions
+              |> disjunct_formulae
+        val disjunct_id = merge_disjuncts disjunctions
+        val _ = writeln disjunct_id
+        val disjunct_node = 
+            ProofNode 
+                { formula = disjunction,
+                  kind = ATP_Problem.Plain,
+                  justification_splits = [] }
+    in
+        List.foldl 
+            (fn (node, graph') => insert_node graph' (disjunct_id, disjunct_node) node)
+            graph
+            origins
+    end
+
 fun proof_contraposition (ProofGraph original_graph) =
     (* first need to be able to get subgraph around a node. *)
     let val get_subgraph = node_subgraph original_graph
@@ -399,48 +424,28 @@ fun proof_contraposition (ProofGraph original_graph) =
                 merge_subgraphs swapped_subgraph graph
             end
 
-        (* fun insert_node graph (id, value) prev_id = *)
-
       fun new_node (node_id, graph) =
             let val (ProofNode node) = Graph.get_node graph node_id
                 val formula = #formula node
                 val new_formula = negated_formula formula
                 val succs = Graph.imm_succs graph node_id
-                val disjunction = 
-                    List.map 
-                        (fn id => Graph.get_node graph id 
-                                    |> get_proof_node_formula)
-                        succs
-                          |> disjunct_formulae 
                 fun make_node _ =
                     ProofNode 
                         { formula = new_formula, 
                           kind = ATP_Problem.Plain,
                           justification_splits = #justification_splits node }
-                fun disjunct_node _ = 
-                    ProofNode 
-                    { formula = disjunction,
-                      kind = ATP_Problem.Plain,
-                      justification_splits = [] }
             in       
                 case #kind node of
                     NegatedConjecture =>
-                    let val succs = Graph.imm_succs graph node_id
-                    in
-                        (if (List.length succs > 1)
-                         then insert_node 
-                                  graph 
-                                  (disjunct_id succs,
-                                   disjunct_node ()) 
-                                  node_id
-                         else graph) 
-                            |> Graph.map_node node_id make_node
-                    end
+                    (if (List.length succs > 1)
+                     then insert_disjunct_after graph [node_id] succs
+                     else graph)
+                       |> Graph.map_node node_id make_node
                   | _ => graph
             end
             
-        val keys = Graph.keys original_graph
-        val redirected_graph = List.foldl node_contraposition Graph.empty keys
+      val keys = Graph.keys original_graph
+      val redirected_graph = List.foldl node_contraposition Graph.empty keys
     in
         ProofGraph (List.foldl new_node redirected_graph keys)
     end
