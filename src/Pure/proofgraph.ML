@@ -45,6 +45,8 @@ signature PROOF_GRAPH = sig
     val proof_graph_from_file: string -> proof_graph
     val get_proof_start: proof_graph -> (key list * key list)
     val get_proof_node_formula: proof_node -> formula
+    val is_branch: proof_node Graph.T -> key -> bool
+    val get_node_string: proof_node Graph.T -> key -> string
 end
 
 (* Need to be able to do fast lookups on dependencies... *)
@@ -196,6 +198,7 @@ type proof = formula ATP_Proof.step list
          Axiom | Definition | Lemma | Hypothesis |
          Conjecture | NegatedConjecture | Plain*)
 
+    
 fun dependencies_from_inference (ATP_Proof.Inference inf) = 
     (List.map (fn justification => #1 justification |> Int.fromString) 
               (#justification inf))
@@ -441,6 +444,22 @@ fun proof_contraposition (ProofGraph original_graph) =
     in
         ProofGraph (List.foldl new_node redirected_graph keys)
     end
+          
+fun get_node_string proof node_id = 
+    let val (ProofNode node) = Graph.get_node proof node_id
+    in case #kind node of
+           NegatedConjecture => "~" ^ node_id
+         | _ => node_id
+    end
+    
+fun is_branch proof node_id = 
+    let val formula = Graph.get_node proof node_id |> get_proof_node_formula
+    in
+        if (((is_disjunct formula) orelse (is_top formula))
+            andalso ((Graph.imm_succs proof node_id |> List.length) > 1))
+        then true
+        else false
+    end     
 end
 
 
