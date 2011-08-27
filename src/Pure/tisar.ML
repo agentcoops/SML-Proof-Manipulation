@@ -63,7 +63,8 @@ fun proof_graph_to_tisar (ProofGraph proof) =
            
           | proof_graph_to_tisar' proof proved unproved [] [] (branch :: branches) tisar_accum_cps =
             let fun handle_branch node_id proved =
-                    let val proved' = set_add proved node_id
+                    let val _ = writeln ("Disjunction is: " ^ node_id)
+                        val proved' = set_add proved node_id
                         val branches = get_succs proof node_id
                                        
                         fun common_conclusion unproved proved = 
@@ -83,8 +84,12 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                             end
                             
                         fun make_branch root_id = 
+                            (writeln ("on branch " ^ root_id);
+                             get_preds proof root_id |> PolyML.makestring |> writeln;
+                             PolyML.makestring proved' |> writeln;
                             if is_provable proof proved' root_id then
-                                let val proved'' = set_add proved' root_id
+                                let val _ = writeln "provable"
+                                    val proved'' = set_add proved' root_id
                                     val (provable, unprovable) = 
                                         get_provable_children proof root_id proved''
                                     val (branch, proved''', unproved) = 
@@ -102,7 +107,7 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                                      proved'',
                                      unproved)
                                 end
-                            else (NONE, proved', [root_id])
+                            else (NONE, proved', [root_id]))
                                  
                         fun make_branches (branch_id, (branches, proved, unproved)) = 
                             let val (branch, branch_proved, unproved') = make_branch branch_id

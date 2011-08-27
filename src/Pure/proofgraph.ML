@@ -429,6 +429,7 @@ fun proof_contraposition (ProofGraph original_graph) =
                 val formula = #formula node
                 val new_formula = negated_formula formula
                 val succs = Graph.imm_succs graph node_id
+                val _ = writeln ("For " ^ node_id ^ ": " ^ (PolyML.makestring succs))
                 fun make_node _ =
                     ProofNode 
                         { formula = new_formula, 
