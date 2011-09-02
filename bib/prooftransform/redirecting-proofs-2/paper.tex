@@ -227,14 +227,14 @@ In my PAAR 2010 and IWIL 2010 talks \cite{blanchette-paulson-2010,paulson-2010},
 I sketched a method for transforming proofs by contradiction into direct proofs.
 The method was very simple and simply exploited the contrapositive, but in the
 worst case the resulting proof could explode exponentially in size. In this
-paper, I propose a new method transform resolution proofs into direct proofs
-expressed in a simple Isar-like syntax (Section~\ref{sec:proof-notations}),
-based on a simple set of rules (Sections \ref{sec:introductory-examples} and
-\ref{sec:the-algorithm}). The new approach is sound and complete and has the
-advantage that each deduction in the ATP proof gives rise to exactly one
-deduction in the direct proof. A linear number of additional steps are
-introduced in the direct proof, but these are simple logical rules, such as
-modus ponens, and do not require the full power of Metis.
+paper, I propose a new method for transforming resolution proofs into direct
+proofs expressed in a simple Isar-like syntax
+(Section~\ref{sec:proof-notations}), based on a simple set of rules (Sections
+\ref{sec:introductory-examples} and \ref{sec:the-algorithm}). The new approach
+is sound and complete and has the advantage that each deduction in the ATP proof
+gives rise to exactly one deduction in the direct proof. A linear number of
+additional steps are introduced in the direct proof, but these are simple
+logical rules, such as modus ponens, and do not require the full power of Metis.
 %The approach is illustrated on
 %actual ATP proofs found by Sledgehammer (Section~\ref{sec:gallery}).
 
