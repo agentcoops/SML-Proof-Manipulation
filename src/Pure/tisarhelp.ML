@@ -1,7 +1,7 @@
-(* This is my standard library. Just contains various helper functions. 
+(* Title: Pure/tisarhelp.ML
+   Author: Charles Francis              
 
-TODO: switch to ord_list and I don't need all the set methods,
-tabulate replaces constant list... *)
+*)
 structure Help = struct
 
 fun sort_unique lst = Ord_List.make fast_string_ord lst
@@ -17,14 +17,6 @@ fun set_union set1 set2 =
 
 fun set_add_list set lst = 
     set_union set (sort_unique lst)
-
-(* fun set_add set value = 
-    (Set.insert_after NONE (value, "") set) 
-    handle DUPLICATE => set
-
-fun set_add_list set values = 
-    List.foldl (fn (value, accum) => set_add accum value) set values
-*)
 
 fun constant_list_of_same_size value lst = 
     List.tabulate (length lst, fn _ => value)

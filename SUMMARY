@@ -1,11 +1,36 @@
 (* Files Created/Changed *)
 
-1. src/Pure/proofgraph.ML:
+1. src/Pure/tisarhelp.ML: 
+Herein are defined various helper functions for my work on tisar. If
+you know where similar/simpler/more efficient methods are defined in
+either the PolyML standard basis or the bowls of Isabelle, please let
+me know as many of these implementations are rather sloppy
+placeholders.
 
-2. src/Pure/tisar.ML:
+2. src/Pure/negatableformula.ML:
+This file defines the signature of the "negatable formula" that is
+required by the proof graph datatype and hence tisar. A sample
+implementation is provided for TSTP.
 
-3. src/Pure/tisarhelp.ML
+3. src/Pure/proofgraph.ML:
+The make
 
-4. src/Pure/General/graph.ML
+4. src/Pure/tisar.ML:
 
-5. src/Pure/tests.ML
+5. src/Pure/General/graph.ML: 
+Made some slight changes to this file that I'm presently factoring out
+to aid in the merge. The following methods were added:
+
+reverse_edge
+filter
+filter_nodes
+
+6. src/Pure/tests.ML:
+This defines the "tests" I've been using to make sure that tisar is
+working as expected. This is still rather manual, unfortunately, and
+my workflow has been to compare the tisar generated to Jasmin's
+handwritten solutions to the challenge proofs in the gallery.
+
+This remains the best documentation on the use of this library: load
+the files indicated at the top of tests.ML and follow the examples for
+TSTP proofs of interest.

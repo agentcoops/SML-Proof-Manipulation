@@ -1,5 +1,9 @@
-(* Library for manipulating and generating tisar, an isar-like proof
-   representation, proofs. *)
+(* Title: Pure/tisar.ML
+   Author: Charles Francis
+
+Library for manipulating and generating tisar, an isar-like proof
+representation, proofs. 
+*)
 
 signature TISAR = sig
     

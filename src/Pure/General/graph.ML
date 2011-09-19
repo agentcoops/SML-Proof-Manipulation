@@ -1,9 +1,5 @@
 (*  Title:      Pure/General/graph.ML
     Author:     Markus Wenzel and Stefan Berghofer, TU Muenchen
-
--Cooper: added reverse_edge
-
-Directed graphs.
 *)
 
 signature GRAPH =
