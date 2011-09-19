@@ -1,6 +1,7 @@
 (* OK, I want to normalize the tests a bit better for this project. *)
 use "ROOT.ML"; (* load the necessary isabelle environment. *)
 use "tisarhelp.ML";
+use "negatableformula.ML";
 use "proofgraph.ML"; (* load proofgraph. *)
 use "tisar.ML"; (* load all of the tisar code *)
 
