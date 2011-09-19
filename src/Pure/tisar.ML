@@ -46,7 +46,7 @@ fun proof_graph_to_tisar (ProofGraph proof) =
             
         fun is_provable proof proved node = 
             get_preds proof node
-              |> List.all (Set.defined proved)
+              |> List.all (set_defined proved)
 
         fun provable_subset proof proved nodes =
             List.partition (is_provable proof proved) nodes
@@ -59,7 +59,7 @@ fun proof_graph_to_tisar (ProofGraph proof) =
         and proof_graph_to_tisar' proof proved unproved [] [] [] tisar_accum_cps = 
             (tisar_accum_cps, 
              proved, 
-             List.filter (fn x => not (Set.defined proved x)) unproved)
+             List.filter (fn x => not (set_defined proved x)) unproved)
            
           | proof_graph_to_tisar' proof proved unproved [] [] (branch :: branches) tisar_accum_cps =
             let fun handle_branch node_id proved =
@@ -74,10 +74,10 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                                     case #justification_splits node of
                                         [] => 
                                         SOME (get_preds proof id
-                                          |> List.filter (Set.defined proved))
+                                          |> List.filter (set_defined proved))
                                       | lst => 
                                         List.find 
-                                            (fn just => List.all (Set.defined proved) just) 
+                                            (fn just => List.all (set_defined proved) just) 
                                             lst
                             in
                                 Block (Have (unproved, sort_unique provable), End)
@@ -113,12 +113,12 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                             let val (branch, branch_proved, unproved') = make_branch branch_id
                             in
                                 (branch :: branches, 
-                                 Set.merge (op =) (branch_proved, proved),
+                                 set_union branch_proved proved,
                                  unproved' @ unproved)
                             end
                             
                         val (possible_branch_nodes, proved'', conclusion) = 
-                            List.foldl make_branches ([], Set.empty, []) branches
+                            List.foldl make_branches ([], [], []) branches
                         val branch_nodes = List.mapPartial I possible_branch_nodes
                         val conclusion_node = merge_disjuncts conclusion
                         val proof' = 
@@ -134,7 +134,7 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                                       (Block (Branch (nodes,
                                                       ([conclusion_node], [node_id])),
                                               x))
-                                          |> (if Set.defined proved node_id then I 
+                                          |> (if set_defined proved node_id then I 
                                               else (fn x => 
                                                        Block (Have ([get_node_string proof node_id], 
                                                                     get_preds proof node_id), 
@@ -151,7 +151,7 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                     else
                         (List.filter 
                              (fn x => 
-                                 List.all (Set.defined proved') 
+                                 List.all (set_defined proved') 
                                           (Graph.imm_preds proof' x))
                              (get_succs proof' conclusion),
                          branches)
@@ -208,7 +208,7 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                                  node_id 
                                  (set_add proved node_id)
                          val (handle_next', tisar_accum_cps') = 
-                             if (Set.defined proved node_id) then
+                             if (set_defined proved node_id) then
                                  (handle_next, tisar_accum_cps)
                              else (provable_children @ handle_next, 
                                    (fn x => Block (tisar_node, x) |> tisar_accum_cps))
@@ -227,7 +227,7 @@ fun proof_graph_to_tisar (ProofGraph proof) =
         val (tisar_accum, _, _) = 
             proof_graph_to_tisar' 
                 proof
-                (set_add_list Set.empty to_ignore) 
+                (set_add_list [] to_ignore) 
                 [] 
                 proof_start 
                 [] 

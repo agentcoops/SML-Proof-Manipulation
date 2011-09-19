@@ -53,7 +53,7 @@ signature PROOF_GRAPH = sig
 end
 
 (* Need to be able to do fast lookups on dependencies... *)
-structure Set = Linear_Set(type key = string val ord = fast_string_ord);
+(* structure Set = Linear_Set(type key = string val ord = fast_string_ord); *)
 
 open Help
 
