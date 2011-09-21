@@ -41,7 +41,10 @@ datatype 'a tisar_proof =
 
 exception option_deal
 
-(* CPS-style implementation of tisar. *)
+(* CPS-style implementation of tisar.
+
+I'm presently in the process of cleaning this 
+code as, unfortunately, it's a bit messy... *)
 fun proof_graph_to_tisar (ProofGraph proof) = 
     let val (proof_start, to_ignore) = get_proof_start (ProofGraph proof)
                           
@@ -59,18 +62,30 @@ fun proof_graph_to_tisar (ProofGraph proof) =
             get_succs proof node_id
               |> provable_subset proof proved
 
-        (* args are: proof proved unproved working_set todo_next branches accum_continuation *)
+        (* args are: proof proved unproved working_set 
+           todo_next branches accum_continuation *)
+
+        (* the case where there the working_set, branches and todo_next 
+           are empty... return results along with the proved and unproved. *)
         and proof_graph_to_tisar' proof proved unproved [] [] [] tisar_accum_cps = 
             (tisar_accum_cps, 
              proved, 
              List.filter (fn x => not (set_defined proved x)) unproved)
            
-          | proof_graph_to_tisar' proof proved unproved [] [] (branch :: branches) tisar_accum_cps =
+         (* working_set and todo_next are empty, but there's a branch to handle *)
+          | proof_graph_to_tisar' 
+                proof proved 
+                unproved [] [] 
+                (branch :: branches) 
+                tisar_accum_cps =
             let fun handle_branch node_id proved =
                     let val _ = writeln ("Disjunction is: " ^ node_id)
                         val proved' = set_add proved node_id
                         val branches = get_succs proof node_id
                                        
+                        (* assuming proofs are valid coming in, the first 
+                           "unproved" result on a branch is the  earliest
+                           common result. *)
                         fun common_conclusion unproved proved = 
                             let val id = disjunct_id unproved
                                 val (ProofNode node) = Graph.get_node proof id
@@ -81,7 +96,8 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                                           |> List.filter (set_defined proved))
                                       | lst => 
                                         List.find 
-                                            (fn just => List.all (set_defined proved) just) 
+                                            (fn just => 
+                                                List.all (set_defined proved) just)
                                             lst
                             in
                                 Block (Have (unproved, sort_unique provable), End)

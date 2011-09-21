@@ -55,3 +55,8 @@ val  (TSTPProofGraph.ProofGraph diabolo_graph) = contra_diabolo;
 TSTPProofGraph.proof_graph_to_graphviz contra_diabolo "diabolo.gv" false;
 val diabolo_tisar = TSTPTisar.proof_graph_to_tisar contra_diabolo;
 TSTPTisar.tisar_to_string diabolo_tisar |> writeln;
+
+(*
+notes: remember, I think the issue might even go back to the proof graph, sadly... 
+look into all this...
+*)

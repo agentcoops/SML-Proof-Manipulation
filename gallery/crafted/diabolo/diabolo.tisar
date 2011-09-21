@@ -6,7 +6,8 @@ have 7 | 8
 ||
   assume 8
   hence 3 | 6
-]]
+]] 
+ultimately 2 | 3 | 4 | 6
 hence 2 | 3 | 4
 hence 2 | 3
 [[
@@ -16,4 +17,5 @@ hence 2 | 3
   assume 3
   hence 1
 ]]
+ultimately 1
 hence 0
