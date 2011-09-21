@@ -2,3 +2,4 @@
 [] Factor out graph methods
 [] Improve documentation
 [] Implement hence
+[] Port to development version of Isabelle (JB can help with that)
