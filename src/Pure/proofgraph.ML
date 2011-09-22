@@ -230,7 +230,7 @@ fun insert_disjunct_after graph origins disjunctions =
                 disjunctions
               |> disjunct_formulae
         val disjunct_id = merge_disjuncts disjunctions
-        val _ = writeln disjunct_id
+        (* val _ = writeln disjunct_id *)
         val disjunct_node = 
             ProofNode 
                 { formula = disjunction,
@@ -243,6 +243,14 @@ fun insert_disjunct_after graph origins disjunctions =
             origins
     end
 
+fun debugging_graph (graph: proof_node T) node =
+    let val thing = Graph.get_node graph node
+    in
+        (writeln ("graph: " ^ (thing |> PolyML.makestring));
+         writeln ("preds: " ^ (Graph.imm_preds graph node |> PolyML.makestring));
+         writeln ("succs: " ^ (Graph.imm_succs graph node |> PolyML.makestring)))
+    end
+
 fun proof_contraposition (ProofGraph original_graph) =
     (* first need to be able to get subgraph around a node. *)
     let val get_subgraph = node_subgraph original_graph
@@ -252,7 +260,7 @@ fun proof_contraposition (ProofGraph original_graph) =
                 val conjecture_check = is_conjecture subgraph
                 val (conjectures, plains) = 
                     partition_graph conjecture_check subgraph
-                val reversals = 
+                val reversals = (* explain this! *)
                     if (contains conjectures node_id) then
                         ListPair.zip 
                             (conjectures,
@@ -295,6 +303,7 @@ fun proof_contraposition (ProofGraph original_graph) =
             
       val keys = Graph.keys original_graph
       val redirected_graph = List.foldl node_contraposition Graph.empty keys
+      val _ = debugging_graph redirected_graph "2"
     in
         ProofGraph (List.foldl new_node redirected_graph keys)
     end
@@ -321,7 +330,7 @@ structure TSTPProofGraph = MakeProofGraph(TSTPFormula)
 
 
 (* helper methods *)
-fun debugging_graph (graph: TSTPProofGraph.proof_node T) node =
+fun debugging_graph2 (graph: TSTPProofGraph.proof_node T) node =
     let val thing = Graph.get_node graph node
     in
         (writeln ("graph: " ^ (thing |> PolyML.makestring));

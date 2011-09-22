@@ -106,12 +106,15 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                         fun make_branch root_id = 
                             (writeln ("on branch " ^ root_id);
                              get_preds proof root_id |> PolyML.makestring |> writeln;
+                             get_succs proof root_id |> PolyML.makestring |> writeln;
                              PolyML.makestring proved' |> writeln;
+                             (* ugh, why do I need this "is_provable"... *)
                             if is_provable proof proved' root_id then
                                 let val _ = writeln "provable"
                                     val proved'' = set_add proved' root_id
                                     val (provable, unprovable) = 
                                         get_provable_children proof root_id proved''
+                                    val _ = PolyML.makestring provable |> writeln;
                                     val (branch, proved''', unproved) = 
                                         proof_graph_to_tisar'
                                             proof
@@ -121,7 +124,7 @@ fun proof_graph_to_tisar (ProofGraph proof) =
                                             []
                                             []
                                             (fn x => Block (Assume root_id, x))
-                                    val _ = PolyML.makestring unproved |> writeln
+                                    (*val _ = PolyML.makestring unproved |> writeln*)
                                 in
                                     (common_conclusion unproved proved''' |> branch |> SOME,
                                      proved'',

@@ -58,5 +58,10 @@ TSTPTisar.tisar_to_string diabolo_tisar |> writeln;
 
 (*
 notes: remember, I think the issue might even go back to the proof graph, sadly... 
-look into all this...
+
+OK. So, definitately a problem in the original proofgraph code.
+2, for example, leads to 1 | 4 | 5.
+
+looking in proofgraph, it looks like, before disjunctions are
+introduced, we get 4 as both pred and succ of 2. NOT GOOD.
 *)
